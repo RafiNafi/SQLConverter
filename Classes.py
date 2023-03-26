@@ -11,7 +11,7 @@ class Property:
 
 
 class Node:
-    def __init__(self, name, label):
+    def __init__(self, name="", label=""):
         self.name = name
         self.label = label
         self.properties = []
@@ -43,3 +43,25 @@ class MatchPart:
 
     def add_relationship(self, relationship):
         self.relationships.append(relationship)
+
+    def get_node_by_label(self,label):
+
+        for node in self.nodes:
+            if node.label == label:
+                return node
+
+    def get_node_by_name(self,name):
+
+        for node in self.nodes:
+            if node.name == name:
+                return node
+    def generate_query_string(self):
+
+        query = "MATCH "
+
+        #generate query
+
+        for n in self.nodes:
+            query += "("+n.label+":"+n.name+") "
+
+        return query
