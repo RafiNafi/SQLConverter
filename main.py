@@ -40,7 +40,24 @@ def make_part_query_string(name, array):
 
     return statement.text
 
-def query_conversion(parsed):
+def combine_query():
+    combined_query_string = ""
+
+    for elem in queryParts:
+        if type(elem) != MatchPart:
+            if elem.keyword != "SELECT":
+                combined_query_string += elem.text
+
+    for elem in queryParts:
+        if type(elem) == MatchPart:
+            combined_query_string = elem.generate_query_string() + combined_query_string
+        elif elem.keyword == "SELECT":
+            combined_query_string = combined_query_string + elem.text
+    return combined_query_string
+
+def query_conversion(query):
+    parsed = sqlparse.parse(query)[0]
+
     # cut array in multiple arrays per major keyword
     for i in parsed:
         # print(str(i))
@@ -87,8 +104,6 @@ def transformQueryPart(text, array):
             queryParts.append(statement)
 
             return statement.text
-        case "DISTINCT":
-            return "DISTINCT"
         case "FROM":
             statement = MatchPart()
 
@@ -159,8 +174,6 @@ def transformQueryPart(text, array):
                             match_query.add_relationship(rel)
 
             return match_query.generate_query_string()
-        case "ON":
-            return ""
         case "GROUP BY":
             return ""
         case "ORDER BY":
@@ -218,7 +231,8 @@ if __name__ == '__main__':
 
     print("--------------------------------")
 
-    query_conversion(parsed)
+    query_conversion(query)
+    print(combine_query())
 
     print("--------------------------------")
 

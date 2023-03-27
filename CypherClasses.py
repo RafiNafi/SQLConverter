@@ -117,4 +117,4 @@ class MatchPart:
         #node_r = "(" + r.node_r.label + ":" + r.node_r.name + ")"
         #query += node_l + r.arrow_dir_l + "[" + r.label + ":" + r.name + "]" + r.arrow_dir_r + node_r
 
-        return query
+        return query + " "
