@@ -1,6 +1,6 @@
 import sqlvalidator
 import sqlparse
-from Classes import Node, Relationship, Property, Statement, MatchPart
+from CypherClasses import Node, Relationship, Property, Statement, MatchPart
 
 keywords_all = ["SELECT", "DISTINCT", "FROM", "AS", "JOIN", "ON", "WHERE", "GROUP BY", "AND", "XOR", "OR", "NOT",
                 "ORDER BY",
@@ -11,15 +11,15 @@ keywords_essential = ["SELECT", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
                       "RIGHT OUTER JOIN", "HAVING", "UNION", "LIMIT"]
 
 queryParts = []
+sql_query_parts = []
 
 def get_match_part():
     for query in queryParts:
-        if isinstance(query,MatchPart):
+        if isinstance(query, MatchPart):
             return query
 
-def recursiveTree(tokenT):
-    print("----")
 
+def recursiveTree(tokenT):
     if type(tokenT) != sqlparse.sql.Token:
         for t in tokenT:
             if type(t) != sqlparse.sql.Token:
@@ -30,10 +30,30 @@ def recursiveTree(tokenT):
         print(str(tokenT))
         return
 
+def make_part_query_string(name, array):
+    string_query = ""
+    for token in array:
+        string_query += str(token)
+
+    statement = Statement(name, string_query)
+    queryParts.append(statement)
+
+    return statement.text
+
+def query_conversion(parsed):
+    # cut array in multiple arrays per major keyword
+    for i in parsed:
+        # print(str(i))
+        if str(i) in keywords_essential or type(i) == sqlparse.sql.Where:
+            sql_query_parts.append([])
+        sql_query_parts[len(sql_query_parts) - 1].append(i)
+
+    # transform query parts
+    for i in range(len(sql_query_parts)):
+        print(transformQueryPart(str(sql_query_parts[i][0]), sql_query_parts[i]))
 
 def transformQueryPart(text, array):
-
-    #if WHERE clause then cut into pieces
+    # if WHERE clause then cut into pieces
     if str(array[0]).split(" ")[0] == "WHERE":
         text = "WHERE"
         new_array = []
@@ -56,7 +76,7 @@ def transformQueryPart(text, array):
 
                 if type(t) == sqlparse.sql.IdentifierList:
                     for index, obj in enumerate(t.get_identifiers()):
-                        print(obj)
+                        #print(obj)
                         if (index == len(list(t.get_identifiers())) - 1):
                             statement.text = statement.text + str(obj) + " "
                         else:
@@ -76,7 +96,7 @@ def transformQueryPart(text, array):
 
                 if type(t) == sqlparse.sql.IdentifierList:
                     for obj in enumerate(t.get_identifiers()):
-                        print(obj)
+                        #print(obj)
                         if "AS" in str(obj).split(" "):
                             as_parts = str(obj).split(" ")
                             statement.add_node(Node(as_parts[0], as_parts[2]))
@@ -96,9 +116,7 @@ def transformQueryPart(text, array):
         case "WHERE":
             statement = Statement("WHERE", "WHERE ")
 
-
             queryParts.append(statement)
-
             return statement.text
         case "AS":
             return "AS"
@@ -108,7 +126,7 @@ def transformQueryPart(text, array):
 
             for token in array:
                 if type(token) == sqlparse.sql.Identifier:
-                    print(token)
+                    #print(token)
                     if "AS" in str(token).split(" "):
                         as_parts = str(token).split(" ")
                         match_query.add_node(Node(as_parts[0], as_parts[2]))
@@ -121,15 +139,24 @@ def transformQueryPart(text, array):
                         if type(comp) == sqlparse.sql.Comparison:
                             values = str(comp).split(" ")
 
-                            # label oder name suchen?
-                            # first name and then label
-                            node1 = match_query.get_node_by_label(values[0].split(".")[0])
-                            node2 = match_query.get_node_by_label(values[len(values)-1].split(".")[0])
+                            # checks for name first then label
 
-                            # richtung bestimmen?
-                            # relationship name erfinden?
-                            match_query.add_relationship(Relationship("test","",node1,node2,"L"))
+                            node1 = match_query.get_node_by_name(values[0].split(".")[0])
+                            node2 = match_query.get_node_by_name(values[len(values) - 1].split(".")[0])
 
+                            if node1 is None:
+                                node1 = match_query.get_node_by_label(values[0].split(".")[0])
+                            if node2 is None:
+                                node2 = match_query.get_node_by_label(values[len(values) - 1].split(".")[0])
+
+                            # relationship name
+                            # direction relevant?
+                            rel = Relationship("relationship", "", node2, node1, "-", "-")
+
+                            # add relationship to node
+                            node1.add_relationship(rel)
+                            # add relationship to match query part
+                            match_query.add_relationship(rel)
 
             return match_query.generate_query_string()
         case "ON":
@@ -137,7 +164,7 @@ def transformQueryPart(text, array):
         case "GROUP BY":
             return ""
         case "ORDER BY":
-            return "ORDER BY"
+            return make_part_query_string(text,array)
         case "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
             return "OPTIONAL MATCH"
         case "HAVING":
@@ -147,7 +174,7 @@ def transformQueryPart(text, array):
         case "UNION ALL":
             return "UNION ALL"
         case "LIMIT":
-            return "LIMIT"
+            return make_part_query_string(text,array)
         case "UNION ALL":
             return "UNION ALL"
         case "ASC":
@@ -160,17 +187,24 @@ def transformQueryPart(text, array):
 
 if __name__ == '__main__':
 
-    #query for testing
-
-    query = "SELECT e.EmployeeID, count(*) AS Count " \
+    # test queries
+    query2 = "SELECT e.EmployeeID, count(*) AS Count " \
             "FROM Employee AS e " \
             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
+            "JOIN products AS p ON (p.ProductID = o.ProductID) " \
+            "WHERE e.EmployeeID = 100 " \
             "GROUP BY e.EmployeeID " \
-            "ORDER BY Count DESC LIMIT 10;"
+            "ORDER BY Count DESC " \
+            "LIMIT 10;"
+
+    query = "SELECT p.ProductName, p.UnitPrice " \
+             "FROM products AS p " \
+             "WHERE p.ProductName LIKE 'C%' AND p.UnitPrice > 100;"
+
 
     sql_query = sqlvalidator.parse(query)
 
-    #check if query valid
+    # check if query valid
     if not sql_query.is_valid():
         print(sql_query.errors)
     else:
@@ -178,27 +212,13 @@ if __name__ == '__main__':
 
     print("--------------------------------")
 
-    #parse and print string
+    # parse and print string
     parsed = sqlparse.parse(query)[0]
-    tokensP = parsed.tokens
-    print(tokensP)
+    print(parsed.tokens)
 
     print("--------------------------------")
 
-    # cut array in multiple arrays per major keyword
-    queryParts = []
-
-    for i in parsed:
-        # print(str(i))
-        if str(i) in keywords_essential or type(i) == sqlparse.sql.Where:
-            queryParts.append([])
-        queryParts[len(queryParts) - 1].append(i)
-
-    # print(queryParts)
-
-    # transform query parts
-    for i in range(len(queryParts)):
-        print(transformQueryPart(str(queryParts[i][0]), queryParts[i]))
+    query_conversion(parsed)
 
     print("--------------------------------")
 
