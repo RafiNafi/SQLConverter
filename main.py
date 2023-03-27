@@ -19,17 +19,6 @@ def get_match_part():
             return query
 
 
-def recursiveTree(tokenT):
-    if type(tokenT) != sqlparse.sql.Token:
-        for t in tokenT:
-            if type(t) != sqlparse.sql.Token:
-                recursiveTree(t)
-            else:
-                print(str(t))
-    else:
-        print(str(tokenT))
-        return
-
 def make_part_query_string(name, array):
     string_query = ""
     for token in array:
@@ -68,6 +57,8 @@ def query_conversion(query):
     # transform query parts
     for i in range(len(sql_query_parts)):
         print(transformQueryPart(str(sql_query_parts[i][0]), sql_query_parts[i]))
+
+    return combine_query()
 
 def transformQueryPart(text, array):
     # if WHERE clause then cut into pieces
@@ -231,10 +222,7 @@ if __name__ == '__main__':
 
     print("--------------------------------")
 
-    query_conversion(query)
-    print(combine_query())
+    print(query_conversion(query))
 
     print("--------------------------------")
 
-    # for token in sqlparse.sql.IdentifierList(tokensP).get_identifiers():
-    #    recursiveTree(token)
