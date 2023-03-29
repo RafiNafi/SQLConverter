@@ -26,7 +26,6 @@ def test_mult_joins():
                                       "ORDER BY Count DESC " \
                                       "LIMIT 10 " \
                                       "RETURN e.EmployeeID, count(*) AS Count;"
-
 def test_mult_joins_mixed_alias():
     query = "SELECT EmployeeID, count(*) " \
             "FROM Employee " \
@@ -41,7 +40,7 @@ def test_mult_joins_mixed_alias():
                                       "ORDER BY Count DESC " \
                                       "RETURN EmployeeID, count(*);"
 
-def test_where_in_and_between():
+def test_where_in_and_between_not():
 
     query = "SELECT p.ProductName, p.UnitPrice " \
              "FROM products AS p " \
@@ -52,3 +51,12 @@ def test_where_in_and_between():
                                       "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT p.Price BETWEEN 10 AND 20 " \
                                       "RETURN p.ProductName, p.UnitPrice;"
 
+def test_where_like():
+
+    query = "SELECT p.ProductName, p.UnitPrice " \
+            "FROM products AS p " \
+            "WHERE p.ProductName LIKE 'C%ool';"
+
+    assert query_conversion(query) == "MATCH (p:products) " \
+                                      "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
+                                      "RETURN p.ProductName, p.UnitPrice;"

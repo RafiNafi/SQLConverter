@@ -113,10 +113,6 @@ class MatchPart:
             elif type(elem) == Node:
                 query += "(" + elem.label + ":" + elem.name + ")"
 
-        #node_l = "(" + r.node_l.label + ":" + r.node_l.name + ")"
-        #node_r = "(" + r.node_r.label + ":" + r.node_r.name + ")"
-        #query += node_l + r.arrow_dir_l + "[" + r.label + ":" + r.name + "]" + r.arrow_dir_r + node_r
-
         query += " "
 
         return query
