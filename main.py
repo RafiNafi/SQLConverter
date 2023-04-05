@@ -1,22 +1,22 @@
 import sqlvalidator
 import sqlparse
-from CypherClasses import Node, Relationship, Property, Statement, MatchPart
+from CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
 keywords_all = ["SELECT", "DISTINCT", "FROM", "AS", "JOIN", "ON", "WHERE", "GROUP BY", "AND", "XOR", "OR", "NOT",
                 "ORDER BY",
-                "FULL JOIN", "IN", "BETWEEN", "ASC", "DESC", "LIKE", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "HAVING",
-                "UNION", "LIMIT", "ALL", "ANY", "EXISTS"]
+                "FULL JOIN", "IN", "BETWEEN", "ASC", "DESC", "LIKE", "LEFT OUTER JOIN", "RIGHT OUTER JOIN",
+                "INNER JOIN", "HAVING", "UNION", "LIMIT", "ALL", "ANY", "EXISTS"]
 
 keywords_essential = ["SELECT", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY", "FULL JOIN", "LEFT OUTER JOIN",
-                      "RIGHT OUTER JOIN", "HAVING", "UNION", "LIMIT"]
+                      "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "LIMIT"]
 
 queryParts = []
 sql_query_parts = []
 
 
-def get_match_part():
+def get_match_part(typ):
     for query in queryParts:
-        if isinstance(query, MatchPart):
+        if type(query) == typ:
             return query
 
 def get_query_part_by_name(name):
@@ -25,18 +25,23 @@ def get_query_part_by_name(name):
             if query.keyword == name:
                 return query
 
+
+def check_for_subquery(array):
+    return
+
 def get_correct_command_string(text, variable):
     text = text.replace("'", "")
     text = text.replace("\"", "")
 
     if text[-1] == "%" and text[0] == "%":
-        return variable+" CONTAINS \"" + text[1:-1] + "\""
+        return variable + " CONTAINS \"" + text[1:-1] + "\""
     elif text[0] == "%":
-        return variable+" ENDS WITH \"" + text[1:] + "\""
+        return variable + " ENDS WITH \"" + text[1:] + "\""
     elif text[-1] == "%":
-        return variable+" STARTS WITH \"" + text[:-1] + "\""
+        return variable + " STARTS WITH \"" + text[:-1] + "\""
     elif text[-1] != "%" and text[0] != "%" and ("%" in text) and (text.count("%") == 1):
-        return variable+" STARTS WITH \"" + text.split("%")[0] + "\" AND "+variable+" ENDS WITH \"" + text.split("%")[1] + "\""
+        return variable + " STARTS WITH \"" + text.split("%")[0] + "\" AND " + variable + " ENDS WITH \"" + \
+               text.split("%")[1] + "\""
 
 
 def make_part_query_string(name, array):
@@ -47,7 +52,7 @@ def make_part_query_string(name, array):
     if string_query[-1] != " ":
         string_query += " "
 
-    statement = Statement(name, string_query)
+    statement = Statement(name, string_query, array)
     queryParts.append(statement)
 
     return statement.text
@@ -58,15 +63,20 @@ def combine_query():
 
     # add all query parts except for match and return
     for elem in queryParts:
-        if type(elem) != MatchPart:
+        if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
             if elem.keyword != "SELECT":
-                combined_query_string += elem.text
+                if elem.keyword == "HAVING":
+                    combined_query_string = elem.text + combined_query_string
+                else:
+                    combined_query_string += elem.text
+        elif type(elem) == OptionalMatchPart:
+            combined_query_string = elem.generate_query_string("OPTIONAL MATCH ") + combined_query_string
 
     # add match part at the beginning and return part at the end
     for elem in queryParts:
         if type(elem) == MatchPart:
-            combined_query_string = elem.generate_query_string() + combined_query_string
-        elif elem.keyword == "SELECT":
+            combined_query_string = elem.generate_query_string("MATCH ") + combined_query_string
+        elif type(elem) != OptionalMatchPart and elem.keyword == "SELECT":
             combined_query_string = combined_query_string + elem.text
 
     # add semicolon
@@ -80,7 +90,7 @@ def swap_text_with_previous(text, searchstring):
     parts = text.split(" ")
     indexes = []
 
-    #print(parts)
+    # print(parts)
     for idx, elem in enumerate(parts):
         if elem == searchstring:
             indexes.append(idx)
@@ -89,8 +99,8 @@ def swap_text_with_previous(text, searchstring):
         parts[index], parts[index - 1] = parts[index - 1], parts[index]
 
     result = ""
-    for idx,elem in enumerate(parts):
-        if idx == len(parts)-1:
+    for idx, elem in enumerate(parts):
+        if idx == len(parts) - 1:
             result = result + elem
         else:
             result = result + elem + " "
@@ -137,7 +147,7 @@ def transformQueryPart(text, array):
 
     match text:
         case "SELECT":
-            statement = Statement("SELECT", "RETURN ")
+            statement = Statement("SELECT", "RETURN ", array)
 
             for t in array:
                 if str(t) == "DISTINCT":
@@ -163,12 +173,12 @@ def transformQueryPart(text, array):
 
                 if type(t) == sqlparse.sql.IdentifierList:
                     for obj in enumerate(t.get_identifiers()):
-                        # print(obj)
-                        if "AS" in str(obj).split(" ") or "as" in str(obj).split(" "):
-                            as_parts = str(obj).split(" ")
+                        # print(obj[1])
+                        if "AS" in str(obj[1]).split(" ") or "as" in str(obj[1]).split(" "):
+                            as_parts = str(obj[1]).split(" ")
                             statement.add_node(Node(as_parts[0], as_parts[2]))
                         else:
-                            statement.add_node(Node(str(obj)))
+                            statement.add_node(Node(str(obj[1])))
 
                 elif type(t) == sqlparse.sql.Identifier:
                     if "AS" in str(t).split(" ") or "as" in str(t).split(" "):
@@ -179,18 +189,18 @@ def transformQueryPart(text, array):
 
             queryParts.append(statement)
 
-            return statement.generate_query_string()
+            return statement.generate_query_string("MATCH ")
         case "WHERE":
-            statement = Statement("WHERE", "")
+            statement = Statement("WHERE", "", array)
 
             for token in array:
                 if type(token) == sqlparse.sql.Comparison:
                     command_string = str(token)
-                    #print(str(token))
+                    # print(str(token))
                     for word in token:
                         if str(word).upper() == "LIKE":
                             parts = str(token).split(" ")
-                            command_string = get_correct_command_string(parts[-1],parts[0])
+                            command_string = get_correct_command_string(parts[-1], parts[0])
                             # print(command_string)
                         if str(word).upper() == "IN" or str(word).upper() == "NOT IN":
                             command_string = command_string.replace("(", "[").replace(")", "]")
@@ -205,9 +215,23 @@ def transformQueryPart(text, array):
             statement.text = swap_text_with_previous(statement.text, "NOT")
             queryParts.append(statement)
             return statement.text
-        case "JOIN" | "FULL JOIN":
+        case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
 
-            match_query = get_match_part()
+            if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" or text == "FULL JOIN" or text == "FULL OUTER JOIN":
+                match_query = get_match_part(OptionalMatchPart)
+
+                if match_query is None:
+
+                    match_query = OptionalMatchPart()
+                    for n in get_match_part(MatchPart).nodes:
+                        match_query.add_node(n)
+                    queryParts.append(match_query)
+
+                query_text = "OPTIONAL MATCH "
+            else:
+                match_query = get_match_part(MatchPart)
+                query_text = "MATCH "
+
             joined_node = Node()
 
             for token in array:
@@ -254,24 +278,22 @@ def transformQueryPart(text, array):
                             # add relationship to match query part
                             match_query.add_relationship(rel)
 
-            return match_query.generate_query_string()
+            return match_query.generate_query_string(query_text)
         case "GROUP BY":
             return ""
         case "ORDER BY":
             return make_part_query_string(text, array)
-        case "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
-            return "OPTIONAL MATCH"
         case "HAVING":
-            statement = Statement("HAVING", "WITH ")
+            statement = Statement("HAVING", "WITH", array)
 
             # create or update where statement
             statement_where = get_query_part_by_name("WHERE")
 
             if statement_where is None:
-                statement_where = Statement("WHERE", "WHERE")
+                statement_where = Statement("WHERE", "WHERE", [])
                 queryParts.append(statement_where)
             else:
-                statement_where.text += ","
+                statement_where.text += "AND"
 
             for token in array[1:]:
                 statement_where.text += str(token)
@@ -280,14 +302,15 @@ def transformQueryPart(text, array):
             # copy variables from return to with clause
             statement_select = get_query_part_by_name("SELECT")
 
-            print(statement_select.text)
+            # print(statement_select.text)
+            statement.text += statement_select.text.split("RETURN")[1] + " "
 
             queryParts.append(statement)
             return statement.text
         case "UNION":
-            return "UNION"
+            return make_part_query_string(text, array)
         case "UNION ALL":
-            return "UNION ALL"
+            return make_part_query_string(text, array)
         case "LIMIT":
             return make_part_query_string(text, array)
 
@@ -298,7 +321,7 @@ if __name__ == '__main__':
 
     # test queries
     query2 = "SELECT e.EmployeeID, count(*) AS Count " \
-             "FROM Employee AS e " \
+             "FROM Employee AS e, test " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
              "JOIN products AS p ON (p.ProductID = o.ProductID) " \
              "WHERE e.EmployeeID = 100 " \
@@ -311,16 +334,27 @@ if __name__ == '__main__':
              "WHERE p.Price BETWEEN 10 AND 20 " \
              "AND p.ProductName NOT IN ('Chocolade','Chai');"
 
-    query = "SELECT zipcode AS zip, count(*) AS population " \
+    query3 = "SELECT zipcode AS zip, count(*) AS population " \
             "FROM Person " \
             "GROUP BY zip " \
             "HAVING population>10000;"
 
-    query0 = "SELECT zipcode, count(*) AS population " \
+    query0 = "SELECT zipcode AS zip, count(*) AS population " \
              "FROM Person " \
              "WHERE e.EmployeeID = 100 " \
-             "GROUP BY zipcode " \
+             "GROUP BY zip " \
              "HAVING population>10000;"
+
+    query4 = "SELECT a.studentid, a.name, b.total_marks " \
+             "FROM student AS a, marks " \
+             "WHERE a.studentid = b.studentid " \
+             "AND b.total_marks > (SELECT total_marks FROM marks WHERE studentid =  'V002');"
+
+    query = "SELECT e.EmployeeID, count(*) AS Count " \
+             "FROM Employee AS e " \
+             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
+             "JOIN products AS p ON (p.ProductID = o.ProductID) " \
+             "WHERE e.EmployeeID = 100;"
 
     sql_query = sqlvalidator.parse(query)
 

@@ -1,7 +1,8 @@
 class Statement:
-    def __init__(self, keyword, text):
+    def __init__(self, keyword, text, array):
         self.keyword = keyword
         self.text = text
+        self.array_orig = array  # contains parsed query parts
 
 
 class Property:
@@ -61,51 +62,47 @@ class MatchPart:
             if node.name == name:
                 return node
 
-    def get_index_of_obj(self,chain,node_l):
+    def get_index_of_obj(self, chain, node_l):
 
-        for index,elem in enumerate(chain):
+        for index, elem in enumerate(chain):
             if elem == node_l:
                 return index
 
-    def generate_query_string(self):
+    def generate_query_string(self,text):
 
-        query = "MATCH "
+        query = text
 
         # generate query
         chain = []
 
-        if len(self.relationships) < 1:
-            for n in self.nodes:
-                chain.append(n)
-        else:
-            for r in self.relationships:
+        for r in self.relationships:
 
-                if r.node_l in chain:
-                    index = self.get_index_of_obj(chain, r.node_l)
+            if r.node_l in chain:
+                index = self.get_index_of_obj(chain, r.node_l)
 
-                    if len(chain) == index + 1:
-                        chain.insert(index + 1, r.node_r)
-                        chain.insert(index + 1, r)
-                    else:
-                        chain.insert(index, r)
-                        chain.insert(index, r.node_r)
-                    continue
-
-                elif r.node_r in chain:
-                    index = self.get_index_of_obj(chain, r.node_r)
-
-                    if len(chain) == index + 1:
-                        chain.insert(index + 1, r.node_l)
-                        chain.insert(index + 1, r)
-                    else:
-                        chain.insert(index, r)
-                        chain.insert(index, r.node_l)
-                    continue
-
+                if len(chain) == index + 1:
+                    chain.insert(index + 1, r.node_r)
+                    chain.insert(index + 1, r)
                 else:
-                    chain.append(r.node_l)
-                    chain.append(r)
-                    chain.append(r.node_r)
+                    chain.insert(index, r)
+                    chain.insert(index, r.node_r)
+                continue
+
+            elif r.node_r in chain:
+                index = self.get_index_of_obj(chain, r.node_r)
+
+                if len(chain) == index + 1:
+                    chain.insert(index + 1, r.node_l)
+                    chain.insert(index + 1, r)
+                else:
+                    chain.insert(index, r)
+                    chain.insert(index, r.node_l)
+                continue
+
+            else:
+                chain.append(r.node_l)
+                chain.append(r)
+                chain.append(r.node_r)
 
         for elem in chain:
             if type(elem) == Relationship:
@@ -113,6 +110,19 @@ class MatchPart:
             elif type(elem) == Node:
                 query += "(" + elem.label + ":" + elem.name + ")"
 
+        for n in self.nodes:
+            if n not in chain:
+                if len(chain) < 1:
+                    query += "(" + n.label + ":" + n.name + ")"
+                    chain.append(n)
+                else:
+                    query += ",(" + n.label + ":" + n.name + ")"
+
         query += " "
 
         return query
+
+
+class OptionalMatchPart(MatchPart):
+    pass
+
