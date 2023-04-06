@@ -2,6 +2,13 @@ import pytest
 from main import query_conversion
 
 
+def test_simple_select():
+    query = "SELECT *, p.name " \
+            "FROM products as p;"
+
+    assert query_conversion(query) == "MATCH (p:products) " \
+                                      "RETURN *, p.name;"
+
 def test_check_simple_join():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
             "FROM Employee AS e " \
@@ -40,7 +47,7 @@ def test_mult_joins_mixed_alias():
                                       "ORDER BY Count DESC " \
                                       "RETURN EmployeeID, count(*);"
 
-def test_where_in_and_between_not():
+def test_where_not_in_and_not_between():
 
     query = "SELECT p.ProductName, p.UnitPrice " \
              "FROM products AS p " \
@@ -60,3 +67,16 @@ def test_where_like():
     assert query_conversion(query) == "MATCH (p:products) " \
                                       "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
                                       "RETURN p.ProductName, p.UnitPrice;"
+
+def test_outer_join():
+
+    query = "SELECT e.EmployeeID, count(*) AS Count " \
+             "FROM Employee AS e " \
+             "LEFT OUTER JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
+             "LEFT OUTER JOIN products AS p ON (p.ProductID = o.ProductID) " \
+             "WHERE e.EmployeeID = 100;"
+
+    assert query_conversion(query) == "MATCH (e:Employee) " \
+                                      "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+                                      "WHERE e.EmployeeID = 100 " \
+                                      "RETURN e.EmployeeID, count(*) AS Count;"
