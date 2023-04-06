@@ -9,6 +9,15 @@ def test_simple_select():
     assert query_conversion(query) == "MATCH (p:products) " \
                                       "RETURN *, p.name;"
 
+
+def test_simple_select_wildcard():
+    query = "SELECT p.* " \
+            "FROM products as p;"
+
+    assert query_conversion(query) == "MATCH (p:products) " \
+                                      "RETURN p;"
+
+
 def test_check_simple_join():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
             "FROM Employee AS e " \
@@ -33,6 +42,8 @@ def test_mult_joins():
                                       "ORDER BY Count DESC " \
                                       "LIMIT 10 " \
                                       "RETURN e.EmployeeID, count(*) AS Count;"
+
+
 def test_mult_joins_mixed_alias():
     query = "SELECT EmployeeID, count(*) " \
             "FROM Employee " \
@@ -47,19 +58,19 @@ def test_mult_joins_mixed_alias():
                                       "ORDER BY Count DESC " \
                                       "RETURN EmployeeID, count(*);"
 
-def test_where_not_in_and_not_between():
 
+def test_where_not_in_and_not_between():
     query = "SELECT p.ProductName, p.UnitPrice " \
-             "FROM products AS p " \
-             "WHERE p.ProductName NOT IN ('Chocolade','Chai') " \
-             "AND p.Price NOT BETWEEN 10 AND 20;"
+            "FROM products AS p " \
+            "WHERE p.ProductName NOT IN ('Chocolade','Chai') " \
+            "AND p.Price NOT BETWEEN 10 AND 20;"
 
     assert query_conversion(query) == "MATCH (p:products) " \
                                       "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT p.Price BETWEEN 10 AND 20 " \
                                       "RETURN p.ProductName, p.UnitPrice;"
 
-def test_where_like():
 
+def test_where_like():
     query = "SELECT p.ProductName, p.UnitPrice " \
             "FROM products AS p " \
             "WHERE p.ProductName LIKE 'C%ool';"
@@ -68,13 +79,13 @@ def test_where_like():
                                       "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
                                       "RETURN p.ProductName, p.UnitPrice;"
 
-def test_outer_join():
 
+def test_outer_join():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
-             "FROM Employee AS e " \
-             "LEFT OUTER JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
-             "LEFT OUTER JOIN products AS p ON (p.ProductID = o.ProductID) " \
-             "WHERE e.EmployeeID = 100;"
+            "FROM Employee AS e " \
+            "LEFT OUTER JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
+            "LEFT OUTER JOIN products AS p ON (p.ProductID = o.ProductID) " \
+            "WHERE e.EmployeeID = 100;"
 
     assert query_conversion(query) == "MATCH (e:Employee) " \
                                       "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \

@@ -4,20 +4,24 @@ from CypherClasses import Node, Relationship, Property, Statement, MatchPart, Op
 
 keywords_all = ["SELECT", "DISTINCT", "FROM", "AS", "JOIN", "ON", "WHERE", "GROUP BY", "AND", "XOR", "OR", "NOT",
                 "ORDER BY",
-                "FULL JOIN", "IN", "BETWEEN", "ASC", "DESC", "LIKE", "LEFT OUTER JOIN", "RIGHT OUTER JOIN",
-                "INNER JOIN", "HAVING", "UNION", "LIMIT", "ALL", "ANY", "EXISTS"]
+                "FULL JOIN", "FULL OUTER JOIN", "IN", "BETWEEN", "ASC", "DESC", "LIKE", "LEFT OUTER JOIN",
+                "RIGHT OUTER JOIN",
+                "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT", "ALL", "ANY", "EXISTS"]
 
-keywords_essential = ["SELECT", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY", "FULL JOIN", "LEFT OUTER JOIN",
-                      "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "LIMIT"]
+keywords_essential = ["SELECT", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY", "FULL JOIN", "FULL OUTER JOIN",
+                      "LEFT OUTER JOIN",
+                      "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
 queryParts = []
 sql_query_parts = []
+node_list = []
 
 
 def get_match_part(typ):
     for query in queryParts:
         if type(query) == typ:
             return query
+
 
 def get_query_part_by_name(name):
     for query in queryParts:
@@ -28,6 +32,7 @@ def get_query_part_by_name(name):
 
 def check_for_subquery(array):
     return
+
 
 def get_correct_command_string(text, variable):
     text = text.replace("'", "")
@@ -56,6 +61,15 @@ def make_part_query_string(name, array):
     queryParts.append(statement)
 
     return statement.text
+
+
+def get_node_from_match(match_query, text):
+    node = match_query.get_node_by_name(text)
+
+    if node is None:
+        node = match_query.get_node_by_label(text)
+
+    return node
 
 
 def combine_query():
@@ -156,12 +170,21 @@ def transformQueryPart(text, array):
                 if type(t) == sqlparse.sql.IdentifierList:
                     for index, obj in enumerate(t.get_identifiers()):
                         # print(obj)
-                        if (index == len(list(t.get_identifiers())) - 1):
-                            statement.text = statement.text + str(obj)
+                        item = str(obj)
+                        # check for wildcards in identifiers
+                        if type(obj) == sqlparse.sql.Identifier and obj.is_wildcard() and len(str(obj)) > 1:
+                            item = str(obj).split(".")[0]
+
+                        if index == len(list(t.get_identifiers())) - 1:
+                            statement.text = statement.text + item
                         else:
-                            statement.text = statement.text + str(obj) + ", "
-                elif type(t) == sqlparse.sql.Identifier:
-                    statement.text = statement.text + str(t)
+                            statement.text = statement.text + item + ", "
+                elif type(t) == sqlparse.sql.Identifier or str(t) == "*":
+
+                    if t.is_wildcard() and len(str(t)) > 1:
+                        statement.text = statement.text + str(t).split(".")[0]
+                    else:
+                        statement.text = statement.text + str(t)
 
             queryParts.append(statement)
 
@@ -217,14 +240,15 @@ def transformQueryPart(text, array):
             return statement.text
         case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
 
-            if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" or text == "FULL JOIN" or text == "FULL OUTER JOIN":
+            if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" \
+                    or text == "FULL JOIN" or text == "FULL OUTER JOIN":
                 match_query = get_match_part(OptionalMatchPart)
 
                 if match_query is None:
-
                     match_query = OptionalMatchPart()
-                    for n in get_match_part(MatchPart).nodes:
-                        match_query.add_node(n)
+                    # for n in get_match_part(MatchPart).nodes:
+                    #    match_query.add_node(n)
+
                     queryParts.append(match_query)
 
                 query_text = "OPTIONAL MATCH "
@@ -253,13 +277,21 @@ def transformQueryPart(text, array):
 
                             # checks for name first then label
 
-                            node1 = match_query.get_node_by_name(values[0].split(".")[0])
-                            node2 = match_query.get_node_by_name(values[len(values) - 1].split(".")[0])
+                            node1 = get_node_from_match(match_query, values[0].split(".")[0])
+                            node2 = get_node_from_match(match_query, values[len(values) - 1].split(".")[0])
 
-                            if node1 is None:
-                                node1 = match_query.get_node_by_label(values[0].split(".")[0])
-                            if node2 is None:
-                                node2 = match_query.get_node_by_label(values[len(values) - 1].split(".")[0])
+                            # for one match and one optional match
+                            query_other_match = get_match_part(MatchPart)
+
+                            if type(match_query) == MatchPart:
+                                query_other_match = get_match_part(OptionalMatchPart)
+
+                            if query_other_match is not None:
+                                if node1 is None:
+                                    node1 = get_node_from_match(query_other_match, values[0].split(".")[0])
+                                if node2 is None:
+                                    node2 = get_node_from_match(query_other_match,
+                                                                values[len(values) - 1].split(".")[0])
 
                             # relationship name variable
                             # direction is relevant
@@ -307,9 +339,8 @@ def transformQueryPart(text, array):
 
             queryParts.append(statement)
             return statement.text
-        case "UNION":
-            return make_part_query_string(text, array)
-        case "UNION ALL":
+        case "UNION" | "UNION ALL":
+
             return make_part_query_string(text, array)
         case "LIMIT":
             return make_part_query_string(text, array)
@@ -335,9 +366,9 @@ if __name__ == '__main__':
              "AND p.ProductName NOT IN ('Chocolade','Chai');"
 
     query3 = "SELECT zipcode AS zip, count(*) AS population " \
-            "FROM Person " \
-            "GROUP BY zip " \
-            "HAVING population>10000;"
+             "FROM Person " \
+             "GROUP BY zip " \
+             "HAVING population>10000;"
 
     query0 = "SELECT zipcode AS zip, count(*) AS population " \
              "FROM Person " \
@@ -350,11 +381,19 @@ if __name__ == '__main__':
              "WHERE a.studentid = b.studentid " \
              "AND b.total_marks > (SELECT total_marks FROM marks WHERE studentid =  'V002');"
 
-    query = "SELECT e.EmployeeID, count(*) AS Count " \
+    query6 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
-             "JOIN products AS p ON (p.ProductID = o.ProductID) " \
+             "RIGHT OUTER JOIN products AS p ON (p.ProductID = o.ProductID) " \
              "WHERE e.EmployeeID = 100;"
+
+    query = "SELECT e.EmployeeID, count(*) AS Count " \
+            "FROM Employee AS e " \
+            "WHERE e.EmployeeID = 100 " \
+            "UNION ALL " \
+            "SELECT p.ProductName, p.UnitPrice " \
+            "FROM products AS p " \
+            "WHERE p.ProductName NOT IN ('Chocolade','Chai');"
 
     sql_query = sqlvalidator.parse(query)
 
