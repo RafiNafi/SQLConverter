@@ -95,10 +95,13 @@ if __name__ == '__main__':
             "FROM products AS p " \
             "WHERE p.ProductName NOT IN ('Chocolade','Chai');"
 
-    query = "SELECT e.EmployeeID, count(*) AS Count " \
+    query =  "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
-             "AND e.EmployeeID = 100;"
+             "AND e.EmployeeID = 100 " \
+             "OR e.name = 'Test' " \
+             "WHERE e.price = 10;"
+
 
     sql_query = sqlvalidator.parse(query)
 

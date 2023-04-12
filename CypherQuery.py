@@ -95,7 +95,7 @@ class CypherQuery:
 
         # print(parts)
         for idx, elem in enumerate(parts):
-            if elem == searchstring:
+            if elem == searchstring and parts[idx - 1] not in ["WHERE", "OR", "AND"]:
                 indexes.append(idx)
 
         for index in indexes:
@@ -132,8 +132,55 @@ class CypherQuery:
 
         return self.combine_query()
 
+    def put_array_together_into_string(self, array):
+        combined_result = ""
+        for single in array:
+            combined_result += single
+        return combined_result
+
+    def cutout_keyword_parts_from_array(self, keywords, array):
+        last_index = 0
+        added_conditions_list = []
+
+        for idx, token in enumerate(array):
+            if str(token) in keywords:
+
+                string_query = ""
+                for t in array[last_index:idx]:
+                    string_query += str(t)
+
+                added_conditions_list.append(string_query)
+                added_conditions_list.append(str(token) + str(array[idx + 1]))
+                last_index = idx + 2
+
+            if len(array) == idx + 1:
+
+                string_query = ""
+                for t in array[last_index:idx + 1]:
+                    string_query += str(t)
+
+                added_conditions_list.append(string_query)
+
+        return added_conditions_list
+
+    def update_where_clause(self, array, index, text):
+
+        statement_where = self.get_query_part_by_name("WHERE")
+
+        if statement_where is None:
+            statement_where = Statement("WHERE", "WHERE ", [])
+            self.queryParts.append(statement_where)
+        else:
+            statement_where.text += text
+
+        for token in array[index:]:
+            statement_where.text += str(token)
+        statement_where.text += " "
+
+        return
+
     def transformQueryPart(self, text, array):
-        # if WHERE clause then cut into pieces
+        # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
             text = "WHERE"
             new_array = []
@@ -201,29 +248,53 @@ class CypherQuery:
 
                 return statement.generate_query_string("MATCH ")
             case "WHERE":
-                statement = Statement("WHERE", "", array)
 
-                for token in array:
+                statement = self.get_query_part_by_name("WHERE")
+
+                if statement is None:
+                    statement = Statement("WHERE", "WHERE", array)
+                    self.queryParts.append(statement)
+                else:
+                    statement.text += "AND"
+
+                skip_index = 0
+                for idx, token in enumerate(array[1:]):
+                    if skip_index > idx:
+                        continue
                     if type(token) == sqlparse.sql.Comparison:
                         command_string = str(token)
-                        # print(str(token))
+                        # for LIKE and IN keywords
                         for word in token:
-                            if str(word).upper() == "LIKE":
+                            if str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(token).split(" ")
                                 command_string = self.get_correct_command_string(parts[-1], parts[0])
                                 # print(command_string)
                             if str(word).upper() == "IN" or str(word).upper() == "NOT IN":
                                 command_string = command_string.replace("(", "[").replace(")", "]")
-
                         statement.text += command_string
+                    # for BETWEEN keyword
+                    elif type(token) == sqlparse.sql.Identifier:
+                        if str(array[idx + 3]) == "NOT":
+                            statement.text += str(array[idx + 3])
+                            if str(array[idx + 5]).upper() == "BETWEEN":
+                                statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + str(token) \
+                                    + " =< " + str(array[idx + 11])
+                                skip_index = idx + 11
+                        else:
+                            if str(array[idx + 3]).upper() == "BETWEEN":
+                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + str(token) \
+                                    + " =< " + str(array[idx + 9])
+                                skip_index = idx + 9
+                    # other words
                     else:
                         if str(token) != ";":
                             statement.text += str(token)
                         else:
                             statement.text += " "
 
+                # change position of NOT
                 statement.text = self.swap_text_with_previous(statement.text, "NOT")
-                self.queryParts.append(statement)
+
                 return statement.text
             case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
 
@@ -256,7 +327,7 @@ class CypherQuery:
                             joined_node = Node(str(token))
                             match_query.add_node(joined_node)
 
-                for token in array:
+                for idx, token in enumerate(array):
                     if type(token) == sqlparse.sql.Parenthesis:
                         for comp in token:
                             if type(comp) == sqlparse.sql.Comparison:
@@ -297,6 +368,14 @@ class CypherQuery:
                                 # add relationship to match query part
                                 match_query.add_relationship(rel)
 
+                # look for other conditions in join
+                parts = self.cutout_keyword_parts_from_array(["AND", "OR"], array)
+                print(parts)
+
+                if len(parts) > 1:
+                    # create new or update existing where statement
+                    self.update_where_clause(parts, 2, "")
+
                 return match_query.generate_query_string(query_text)
             case "GROUP BY":
                 return ""
@@ -306,17 +385,8 @@ class CypherQuery:
                 statement = Statement("HAVING", "WITH", array)
 
                 # create or update where statement
-                statement_where = self.get_query_part_by_name("WHERE")
 
-                if statement_where is None:
-                    statement_where = Statement("WHERE", "WHERE", [])
-                    self.queryParts.append(statement_where)
-                else:
-                    statement_where.text += "AND"
-
-                for token in array[1:]:
-                    statement_where.text += str(token)
-                statement_where.text += " "
+                self.update_where_clause(array, 1, "AND")
 
                 # copy variables from return to with clause
                 statement_select = self.get_query_part_by_name("SELECT")
