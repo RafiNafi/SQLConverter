@@ -7,7 +7,7 @@ def test_simple_select():
             "FROM products as p;"
 
     assert convert_query(query) == "MATCH (p:products) " \
-                                      "RETURN *, p.name;"
+                                   "RETURN *, p.name;"
 
 
 def test_simple_select_wildcard():
@@ -15,7 +15,7 @@ def test_simple_select_wildcard():
             "FROM products as p;"
 
     assert convert_query(query) == "MATCH (p:products) " \
-                                      "RETURN p;"
+                                   "RETURN p;"
 
 
 def test_check_simple_join():
@@ -24,7 +24,7 @@ def test_check_simple_join():
             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID);"
 
     assert convert_query(query) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
-                                      "RETURN e.EmployeeID, count(*) AS Count;"
+                                   "RETURN e.EmployeeID, count(*) AS Count;"
 
 
 def test_mult_joins():
@@ -38,10 +38,10 @@ def test_mult_joins():
             "LIMIT 10;"
 
     assert convert_query(query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
-                                      "WHERE e.EmployeeID = 100 " \
-                                      "ORDER BY Count DESC " \
-                                      "LIMIT 10 " \
-                                      "RETURN e.EmployeeID, count(*) AS Count;"
+                                   "WHERE e.EmployeeID = 100 " \
+                                   "ORDER BY Count DESC " \
+                                   "LIMIT 10 " \
+                                   "RETURN e.EmployeeID, count(*) AS Count;"
 
 
 def test_mult_joins_mixed_alias():
@@ -54,9 +54,9 @@ def test_mult_joins_mixed_alias():
             "ORDER BY Count DESC;"
 
     assert convert_query(query) == "MATCH (:Employee)-[:relationship]->(:ord)-[:relationship]->(p:products) " \
-                                      "WHERE EmployeeID = 100 " \
-                                      "ORDER BY Count DESC " \
-                                      "RETURN EmployeeID, count(*);"
+                                   "WHERE EmployeeID = 100 " \
+                                   "ORDER BY Count DESC " \
+                                   "RETURN EmployeeID, count(*);"
 
 
 def test_where_not_in_and_not_between():
@@ -66,8 +66,8 @@ def test_where_not_in_and_not_between():
             "AND p.Price NOT BETWEEN 10 AND 20;"
 
     assert convert_query(query) == "MATCH (p:products) " \
-                                      "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price =< 20 " \
-                                      "RETURN p.ProductName, p.UnitPrice;"
+                                   "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price =< 20 " \
+                                   "RETURN p.ProductName, p.UnitPrice;"
 
 
 def test_where_like():
@@ -76,8 +76,8 @@ def test_where_like():
             "WHERE p.ProductName LIKE 'C%ool';"
 
     assert convert_query(query) == "MATCH (p:products) " \
-                                      "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
-                                      "RETURN p.ProductName, p.UnitPrice;"
+                                   "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
+                                   "RETURN p.ProductName, p.UnitPrice;"
 
 
 def test_outer_join():
@@ -88,9 +88,10 @@ def test_outer_join():
             "WHERE e.EmployeeID = 100;"
 
     assert convert_query(query) == "MATCH (e:Employee) " \
-                                      "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
-                                      "WHERE e.EmployeeID = 100 " \
-                                      "RETURN e.EmployeeID, count(*) AS Count;"
+                                   "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+                                   "WHERE e.EmployeeID = 100 " \
+                                   "RETURN e.EmployeeID, count(*) AS Count;"
+
 
 def test_union_query():
     query = "SELECT DISTINCT e.EmployeeID, count(*) AS Count " \
@@ -117,6 +118,7 @@ def test_union_query():
                                    "WHERE p.ProductName = 'Test' " \
                                    "RETURN *;"
 
+
 def test_between():
     query = "SELECT p.ProductName, p.UnitPrice " \
             "FROM products AS p " \
@@ -124,13 +126,30 @@ def test_between():
             "AND p.ProductName IN ('Chocolade');"
 
     assert convert_query(query) == "MATCH (p:products) " \
-                                      "WHERE 1 <= p.Price =< 15 AND p.ProductName IN ['Chocolade'] " \
-                                      "RETURN p.ProductName, p.UnitPrice;"
-def test_where_not():
+                                   "WHERE 1 <= p.Price =< 15 AND p.ProductName IN ['Chocolade'] " \
+                                   "RETURN p.ProductName, p.UnitPrice;"
 
+
+def test_where_not():
     query = "SELECT * FROM Customers " \
             "WHERE NOT Country='Germany' AND NOT Country='USA';"
 
     assert convert_query(query) == "MATCH (:Customers) " \
                                    "WHERE NOT Country='Germany' AND NOT Country='USA' " \
                                    "RETURN *;"
+
+
+def test_insert():
+    query = "INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country) " \
+            "VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');"
+
+    assert convert_query(query) == "CREATE (:Customers {CustomerName: 'Cardinal', ContactName: 'Tom B. Erichsen', " \
+                                   "Address: 'Skagen 21', City: 'Stavanger', PostalCode: '4006', Country: 'Norway'});"
+
+
+def test_insert_without_columns():
+    query = "INSERT INTO Customers " \
+            "VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');"
+
+    assert convert_query(query) == "CREATE (:Customers {var0: 'Cardinal', var1: 'Tom B. Erichsen', " \
+                                   "var2: 'Skagen 21', var3: 'Stavanger', var4: '4006', var5: 'Norway'});"

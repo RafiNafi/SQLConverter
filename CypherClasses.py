@@ -24,6 +24,22 @@ class Node:
     def add_relationship(self, rel):
         self.relationships.append(rel)
 
+    def get_formatted_node_string(self):
+        formatted_string = "(" + self.name + ":" + self.label
+
+        if len(self.properties) > 0:
+            formatted_string += " {"
+            for idx, prop in enumerate(self.properties):
+                formatted_string += str(prop.name) + ": " + str(prop.value)
+
+                if idx != len(self.properties)-1:
+                    formatted_string += ", "
+
+            formatted_string += "}"
+
+        formatted_string += ")"
+
+        return formatted_string
 
 class Relationship:
     def __init__(self, name, label, node_l, node_r, arrow_dir_l, arrow_dir_r):

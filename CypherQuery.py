@@ -2,8 +2,8 @@ import sqlvalidator
 import sqlparse
 from CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
-keywords_essential = ["SELECT", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY", "FULL JOIN", "FULL OUTER JOIN",
-                      "LEFT OUTER JOIN",
+keywords_essential = ["SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
+                      "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
                       "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
 
@@ -278,12 +278,12 @@ class CypherQuery:
                             statement.text += str(array[idx + 3])
                             if str(array[idx + 5]).upper() == "BETWEEN":
                                 statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + str(token) \
-                                    + " =< " + str(array[idx + 11])
+                                                 + " =< " + str(array[idx + 11])
                                 skip_index = idx + 11
                         else:
                             if str(array[idx + 3]).upper() == "BETWEEN":
                                 statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + str(token) \
-                                    + " =< " + str(array[idx + 9])
+                                                 + " =< " + str(array[idx + 9])
                                 skip_index = idx + 9
                     # other words
                     else:
@@ -400,5 +400,39 @@ class CypherQuery:
                 return self.make_part_query_string(text, array)
             case "LIMIT":
                 return self.make_part_query_string(text, array)
+            case "INSERT":
+                statement = Statement("INSERT", "CREATE ", array)
+
+                properties_list = []
+                new_node = Node()
+
+                for token in array:
+                    if type(token) == sqlparse.sql.Function:
+                        for func_parts in token:
+                            if type(func_parts) == sqlparse.sql.Identifier:
+                                new_node.label = str(func_parts)
+                            if type(func_parts) == sqlparse.sql.Parenthesis:
+                                for col in func_parts:
+                                    if type(col) == sqlparse.sql.IdentifierList:
+                                        for idf in col.get_identifiers():
+                                            properties_list.append(idf)
+
+                    elif type(token) == sqlparse.sql.Identifier:
+                        new_node.label = str(token)
+
+                    elif type(token) == sqlparse.sql.Values:
+                        for value_parts in token:
+                            if type(value_parts) == sqlparse.sql.Parenthesis:
+                                for value in value_parts:
+                                    if type(value) == sqlparse.sql.IdentifierList:
+                                        for idx, idf in enumerate(value.get_identifiers()):
+                                            if len(properties_list) > 0:
+                                                new_node.add_property(Property(properties_list[idx], idf))
+                                            else:
+                                                new_node.add_property(Property("var"+str(idx), idf))
+
+                statement.text += new_node.get_formatted_node_string()
+                self.queryParts.append(statement)
+                return statement.text
 
         return "not found"

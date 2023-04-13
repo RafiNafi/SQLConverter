@@ -34,7 +34,7 @@ def convert_query(query_parts):
     print(queries_list)
 
     print("--------------------------------")
-
+    # combine all queries
     combined_result_query = ""
     for single_query in queries_list:
         query_main = CypherQuery()
@@ -88,31 +88,33 @@ if __name__ == '__main__':
              "WHERE e.EmployeeID = 100;"
 
     query7 = "SELECT DISTINCT e.EmployeeID, count(*) AS Count " \
-            "FROM Employee AS e " \
-            "WHERE e.EmployeeID = 100 " \
-            "UNION ALL " \
-            "SELECT p.ProductName, p.UnitPrice " \
-            "FROM products AS p " \
-            "WHERE p.ProductName NOT IN ('Chocolade','Chai');"
+             "FROM Employee AS e " \
+             "WHERE e.EmployeeID = 100 " \
+             "UNION ALL " \
+             "SELECT p.ProductName, p.UnitPrice " \
+             "FROM products AS p " \
+             "WHERE p.ProductName NOT IN ('Chocolade','Chai');"
 
-    query =  "SELECT e.EmployeeID, count(*) AS Count " \
+    query8 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
              "AND e.EmployeeID = 100 " \
              "OR e.name = 'Test' " \
              "WHERE e.price = 10;"
 
+    query = "DELETE FROM Customers WHERE CustomerName='Alfred';"
 
-    sql_query = sqlvalidator.parse(query)
+    # sql_query = sqlvalidator.parse(query)
 
     # check if query valid
-    if not sql_query.is_valid():
-        print(sql_query.errors)
-    else:
-        print("query is fine!")
+    # if not sql_query.is_valid():
+        # print("ERROR: " + str(sql_query.errors))
+    # else:
 
-        print("--------------------------------")
+    print("query is fine!")
 
-        print(convert_query(query))
+    print("--------------------------------")
 
-        print("--------------------------------")
+    print(convert_query(query))
+
+    print("--------------------------------")
