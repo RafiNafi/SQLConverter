@@ -153,3 +153,8 @@ def test_insert_without_columns():
 
     assert convert_query(query) == "CREATE (:Customers {var0: 'Cardinal', var1: 'Tom B. Erichsen', " \
                                    "var2: 'Skagen 21', var3: 'Stavanger', var4: '4006', var5: 'Norway'});"
+
+def test_delete_node():
+    query = "DELETE FROM Customers WHERE CustomerName='Alfred';"
+
+    assert  convert_query(query) == "MATCH (c:Customers) WHERE CustomerName='Alfred' DELETE c;"
