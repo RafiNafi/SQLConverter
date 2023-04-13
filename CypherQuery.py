@@ -67,11 +67,11 @@ class CypherQuery:
 
     def combine_query(self):
         combined_query_string = ""
-
         # add all query parts except for match and return
+        # add optional match at the beginning
         for elem in self.queryParts:
             if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
-                if elem.keyword != "SELECT":
+                if elem.keyword != "SELECT" and elem.keyword != "DELETE":
                     if elem.keyword == "HAVING":
                         combined_query_string = elem.text + combined_query_string
                     else:
@@ -79,11 +79,12 @@ class CypherQuery:
             elif type(elem) == OptionalMatchPart:
                 combined_query_string = elem.generate_query_string("OPTIONAL MATCH ") + combined_query_string
 
-        # add match part at the beginning and return part at the end
+        # add match part at the beginning and return or delete part at the end
         for elem in self.queryParts:
             if type(elem) == MatchPart:
                 combined_query_string = elem.generate_query_string("MATCH ") + combined_query_string
-            elif type(elem) != OptionalMatchPart and elem.keyword == "SELECT":
+            elif type(elem) != OptionalMatchPart and elem.keyword == "SELECT" or \
+                    type(elem) != OptionalMatchPart and elem.keyword == "DELETE":
                 combined_query_string = combined_query_string + elem.text
 
         return combined_query_string
@@ -225,6 +226,7 @@ class CypherQuery:
                 return statement.text
             case "FROM":
                 statement = MatchPart()
+                opt_delete_statement = self.get_query_part_by_name("DELETE")
 
                 for t in array:
 
@@ -241,8 +243,16 @@ class CypherQuery:
                         if "AS" in str(t).split(" ") or "as" in str(t).split(" "):
                             as_parts = str(t).split(" ")
                             statement.add_node(Node(as_parts[0], as_parts[2]))
+                            # if this from is part of a delete statement
+                            if opt_delete_statement is not None:
+                                opt_delete_statement.text += as_parts[0]
                         else:
-                            statement.add_node(Node(str(t)))
+                            # if this from is part of a delete statement
+                            if opt_delete_statement is not None:
+                                statement.add_node(Node(str(t), str(t)[0].lower()))
+                                opt_delete_statement.text += str(t)[0].lower()
+                            else:
+                                statement.add_node(Node(str(t)))
 
                 self.queryParts.append(statement)
 
@@ -432,6 +442,11 @@ class CypherQuery:
                                                 new_node.add_property(Property("var"+str(idx), idf))
 
                 statement.text += new_node.get_formatted_node_string()
+                self.queryParts.append(statement)
+                return statement.text
+            case "DELETE":
+                statement = Statement("DELETE", "DELETE ", array)
+
                 self.queryParts.append(statement)
                 return statement.text
 
