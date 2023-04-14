@@ -2,7 +2,7 @@ import sqlvalidator
 import sqlparse
 from CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
-keywords_essential = ["SELECT", "INSERT", "UPDATE", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
+keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
                       "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
                       "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
@@ -71,7 +71,7 @@ class CypherQuery:
         # add optional match at the beginning
         for elem in self.queryParts:
             if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
-                if elem.keyword != "SELECT" and elem.keyword != "DELETE":
+                if elem.keyword != "SELECT" and elem.keyword != "DELETE" and elem.keyword != "SET":
                     if elem.keyword == "HAVING":
                         combined_query_string = elem.text + combined_query_string
                     else:
@@ -83,9 +83,9 @@ class CypherQuery:
         for elem in self.queryParts:
             if type(elem) == MatchPart:
                 combined_query_string = elem.generate_query_string("MATCH ") + combined_query_string
-            elif type(elem) != OptionalMatchPart and elem.keyword == "SELECT" or \
-                    type(elem) != OptionalMatchPart and elem.keyword == "DELETE":
-                combined_query_string = combined_query_string + elem.text
+            elif type(elem) != OptionalMatchPart:
+                if elem.keyword == "SELECT" or elem.keyword == "DELETE" or elem.keyword == "SET":
+                    combined_query_string = combined_query_string + elem.text
 
         return combined_query_string
 
@@ -180,6 +180,37 @@ class CypherQuery:
 
         return
 
+    def create_match_clause(self, array):
+        statement = MatchPart()
+        opt_delete_statement = self.get_query_part_by_name("DELETE")
+
+        for t in array:
+
+            if type(t) == sqlparse.sql.IdentifierList:
+                for obj in enumerate(t.get_identifiers()):
+                    # print(obj[1])
+                    if "AS" in str(obj[1]).split(" ") or "as" in str(obj[1]).split(" "):
+                        as_parts = str(obj[1]).split(" ")
+                        statement.add_node(Node(as_parts[0], as_parts[2]))
+                    else:
+                        statement.add_node(Node(str(obj[1]), str(obj[1])[0].lower()))
+
+            elif type(t) == sqlparse.sql.Identifier:
+                if "AS" in str(t).split(" ") or "as" in str(t).split(" "):
+                    as_parts = str(t).split(" ")
+                    statement.add_node(Node(as_parts[0], as_parts[2]))
+                    # if this from is part of a delete statement
+                    if opt_delete_statement is not None:
+                        opt_delete_statement.text += as_parts[0]
+                else:
+                    statement.add_node(Node(str(t), str(t)[0].lower()))
+                    # if this from is part of a delete statement
+                    if opt_delete_statement is not None:
+                        opt_delete_statement.text += str(t)[0].lower()
+
+        self.queryParts.append(statement)
+        return statement
+
     def transformQueryPart(self, text, array):
         # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
@@ -225,36 +256,8 @@ class CypherQuery:
 
                 return statement.text
             case "FROM":
-                statement = MatchPart()
-                opt_delete_statement = self.get_query_part_by_name("DELETE")
 
-                for t in array:
-
-                    if type(t) == sqlparse.sql.IdentifierList:
-                        for obj in enumerate(t.get_identifiers()):
-                            # print(obj[1])
-                            if "AS" in str(obj[1]).split(" ") or "as" in str(obj[1]).split(" "):
-                                as_parts = str(obj[1]).split(" ")
-                                statement.add_node(Node(as_parts[0], as_parts[2]))
-                            else:
-                                statement.add_node(Node(str(obj[1])))
-
-                    elif type(t) == sqlparse.sql.Identifier:
-                        if "AS" in str(t).split(" ") or "as" in str(t).split(" "):
-                            as_parts = str(t).split(" ")
-                            statement.add_node(Node(as_parts[0], as_parts[2]))
-                            # if this from is part of a delete statement
-                            if opt_delete_statement is not None:
-                                opt_delete_statement.text += as_parts[0]
-                        else:
-                            # if this from is part of a delete statement
-                            if opt_delete_statement is not None:
-                                statement.add_node(Node(str(t), str(t)[0].lower()))
-                                opt_delete_statement.text += str(t)[0].lower()
-                            else:
-                                statement.add_node(Node(str(t)))
-
-                self.queryParts.append(statement)
+                statement = self.create_match_clause(array)
 
                 return statement.generate_query_string("MATCH ")
             case "WHERE":
@@ -334,7 +337,7 @@ class CypherQuery:
                             joined_node = Node(as_parts[0], as_parts[2])
                             match_query.add_node(joined_node)
                         else:
-                            joined_node = Node(str(token))
+                            joined_node = Node(str(token), str(token)[0].lower())
                             match_query.add_node(joined_node)
 
                 for idx, token in enumerate(array):
@@ -439,13 +442,39 @@ class CypherQuery:
                                             if len(properties_list) > 0:
                                                 new_node.add_property(Property(properties_list[idx], idf))
                                             else:
-                                                new_node.add_property(Property("var"+str(idx), idf))
+                                                new_node.add_property(Property("var" + str(idx), idf))
 
                 statement.text += new_node.get_formatted_node_string()
                 self.queryParts.append(statement)
                 return statement.text
             case "DELETE":
                 statement = Statement("DELETE", "DELETE ", array)
+
+                self.queryParts.append(statement)
+                return statement.text
+            case "UPDATE":
+
+                statement = self.create_match_clause(array)
+
+                return statement.generate_query_string("MATCH ")
+            case "SET":
+                statement = Statement("SET", "SET ", array)
+
+                statement_match = self.get_match_part(MatchPart)
+                node_name = ""
+
+                if statement_match is not None:
+                    if len(statement_match.nodes) > 0:
+                        node_name = statement_match.nodes[0].label
+
+                for token in array:
+                    if type(token) == sqlparse.sql.IdentifierList:
+                        for idx, val in enumerate(token.get_identifiers()):
+                            statement.text += node_name+"."+str(val)
+                            if idx != len(list(token.get_identifiers())) - 1:
+                                statement.text += ", "
+                    elif type(token) == sqlparse.sql.Identifier:
+                        statement.text += node_name+"."+str(token)
 
                 self.queryParts.append(statement)
                 return statement.text

@@ -102,7 +102,18 @@ if __name__ == '__main__':
              "OR e.name = 'Test' " \
              "WHERE e.price = 10;"
 
-    query = "DELETE FROM Customers WHERE CustomerName='Alfred';"
+    query = "UPDATE Customers " \
+            "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
+            "WHERE CustomerID = 1;"
+
+    query9 = "SELECT e.EmployeeID, count(*) AS Count " \
+             "FROM Employee AS e " \
+             "JOIN ord ON (ord.EmployeeID = e.EmployeeID) " \
+             "JOIN products AS p ON (p.ProductID = o.ProductID) " \
+             "WHERE e.EmployeeID = 100 " \
+             "GROUP BY e.EmployeeID " \
+             "ORDER BY Count DESC " \
+             "LIMIT 10;"
 
     # sql_query = sqlvalidator.parse(query)
 
