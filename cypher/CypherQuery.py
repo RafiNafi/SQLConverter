@@ -1,6 +1,6 @@
 import sqlvalidator
 import sqlparse
-from CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
+from cypher.CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
 keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
                       "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",

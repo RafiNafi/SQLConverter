@@ -1,5 +1,4 @@
-import pytest
-from main import convert_query
+from main.conversion import convert_query
 
 
 def test_simple_select():
@@ -51,11 +50,11 @@ def test_mult_joins_mixed_alias():
             "JOIN products AS p ON (p.ProductID = ord.ProductID) " \
             "WHERE EmployeeID = 100 " \
             "GROUP BY EmployeeID " \
-            "ORDER BY Count DESC;"
+            "ORDER BY count(*) DESC;"
 
-    assert convert_query(query) == "MATCH (:Employee)-[:relationship]->(:ord)-[:relationship]->(p:products) " \
+    assert convert_query(query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
                                    "WHERE EmployeeID = 100 " \
-                                   "ORDER BY Count DESC " \
+                                   "ORDER BY count(*) DESC " \
                                    "RETURN EmployeeID, count(*);"
 
 
@@ -134,7 +133,7 @@ def test_where_not():
     query = "SELECT * FROM Customers " \
             "WHERE NOT Country='Germany' AND NOT Country='USA';"
 
-    assert convert_query(query) == "MATCH (:Customers) " \
+    assert convert_query(query) == "MATCH (c:Customers) " \
                                    "WHERE NOT Country='Germany' AND NOT Country='USA' " \
                                    "RETURN *;"
 
@@ -157,4 +156,29 @@ def test_insert_without_columns():
 def test_delete_node():
     query = "DELETE FROM Customers WHERE CustomerName='Alfred';"
 
-    assert  convert_query(query) == "MATCH (c:Customers) WHERE CustomerName='Alfred' DELETE c;"
+    assert convert_query(query) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' DELETE c;"
+
+def test_delete_with_alias():
+    query = "DELETE FROM Customers AS cust WHERE cust.CustomerName='Alfred';"
+
+    assert convert_query(query) == "MATCH (cust:Customers) WHERE cust.CustomerName='Alfred' DELETE cust;"
+def test_delete_with_many_conditions():
+    query = "DELETE FROM Customers WHERE CustomerName='Alfred' AND City NOT IN ('Stuttgart') AND Service LIKE '%ool' AND CustomerID BETWEEN 1 and 100;"
+
+    assert convert_query(query) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' AND NOT c.City IN ['Stuttgart'] AND c.Service ENDS WITH \"ool\" AND 1 <= c.CustomerID =< 100 DELETE c;"
+
+def test_update_node():
+
+    query = "UPDATE Customers " \
+            "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
+            "WHERE CustomerID = 1;"
+
+    assert convert_query(query) == "MATCH (c:Customers) WHERE c.CustomerID = 1 SET c.ContactName = 'Alfred Schmidt', c.City= 'Frankfurt';"
+
+def test_update_with_alias():
+
+    query = "UPDATE Customers AS cust" \
+            "SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt' " \
+            "WHERE cust.CustomerID = 1;"
+
+    assert convert_query(query) == "MATCH (cust:Customers) WHERE cust.CustomerID = 1 SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt';"
