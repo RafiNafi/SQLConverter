@@ -201,7 +201,8 @@ class CypherQuery:
                     statement.add_node(Node(as_parts[0], as_parts[2]))
                     # if this from is part of a delete statement
                     if opt_delete_statement is not None:
-                        opt_delete_statement.text += as_parts[0]
+
+                        opt_delete_statement.text += as_parts[2]
                 else:
                     statement.add_node(Node(str(t), str(t)[0].lower()))
                     # if this from is part of a delete statement
@@ -289,6 +290,9 @@ class CypherQuery:
                     if skip_index > idx:
                         continue
                     if type(token) == sqlparse.sql.Comparison:
+                        # check if alias exists already
+                        if "." in str(token):
+                            prefix = ""
                         command_string = prefix + str(token)
                         # for LIKE and IN keywords
                         for word in token:
@@ -302,6 +306,10 @@ class CypherQuery:
                         statement.text += command_string
                     # for BETWEEN keyword
                     elif type(token) == sqlparse.sql.Identifier:
+                        # check if alias exists already
+                        if "." in str(token):
+                            prefix = ""
+                        # BETWEEN with NOT
                         if str(array[idx + 3]) == "NOT":
                             statement.text += str(array[idx + 3])
                             if str(array[idx + 5]).upper() == "BETWEEN":
@@ -475,18 +483,21 @@ class CypherQuery:
             case "SET":
                 statement = Statement("SET", "SET ", array)
 
-                node_name = ""
                 # get prefix from match statement
-                node_name = self.get_node_prefix_from_match()
+                node_name = self.get_node_prefix_from_match() + "."
                 # add prefix to identifiers
                 for token in array:
                     if type(token) == sqlparse.sql.IdentifierList:
                         for idx, val in enumerate(token.get_identifiers()):
-                            statement.text += node_name+"."+str(val)
+                            if "." in str(val):
+                                node_name = ""
+                            statement.text += node_name+str(val)
                             if idx != len(list(token.get_identifiers())) - 1:
                                 statement.text += ", "
                     elif type(token) == sqlparse.sql.Identifier:
-                        statement.text += node_name+"."+str(token)
+                        if "." in str(token):
+                            node_name = ""
+                        statement.text += node_name+str(token)
 
                 self.queryParts.append(statement)
                 return statement.text

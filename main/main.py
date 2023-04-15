@@ -49,17 +49,6 @@ if __name__ == '__main__':
              "FROM products AS p " \
              "WHERE p.ProductName NOT IN ('Chocolade','Chai');"
 
-    query8 = "SELECT e.EmployeeID, count(*) AS Count " \
-             "FROM Employee AS e " \
-             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
-             "AND e.EmployeeID = 100 " \
-             "OR e.name = 'Test' " \
-             "WHERE e.price = 10;"
-
-    query = "UPDATE Customers " \
-            "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
-            "WHERE CustomerID = 1 AND City = 'Stuttgart';"
-
     query9 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord ON (ord.EmployeeID = e.EmployeeID) " \
@@ -68,6 +57,19 @@ if __name__ == '__main__':
              "GROUP BY e.EmployeeID " \
              "ORDER BY Count DESC " \
              "LIMIT 10;"
+
+    query12 = "DELETE FROM Customers AS cust " \
+            "WHERE cust.CustomerID BETWEEN 1 and 100 " \
+            "AND cust.CustomerName='Alfred' " \
+            "AND cust.City NOT IN ('Stuttgart') " \
+            "AND cust.Service LIKE '%ool';"
+
+    query = "SELECT e.EmployeeID, count(*) AS Count " \
+             "FROM Employee AS e " \
+             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
+             "AND e.EmployeeID = 100 " \
+             "OR e.name = 'Test' " \
+             "WHERE e.price = 10;"
 
     # sql_query = sqlvalidator.parse(query)
 
