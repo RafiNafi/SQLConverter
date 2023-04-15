@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     query = "UPDATE Customers " \
             "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
-            "WHERE CustomerID = 1;"
+            "WHERE CustomerID = 1 AND City = 'Stuttgart';"
 
     query9 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \

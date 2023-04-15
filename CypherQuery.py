@@ -211,6 +211,17 @@ class CypherQuery:
         self.queryParts.append(statement)
         return statement
 
+    def get_node_prefix_from_match(self):
+
+        statement_match = self.get_match_part(MatchPart)
+        prefix = ""
+        # get prefix from match statement
+        if statement_match is not None:
+            if len(statement_match.nodes) > 0:
+                prefix = statement_match.nodes[0].label
+
+        return prefix
+
     def transformQueryPart(self, text, array):
         # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
@@ -263,6 +274,9 @@ class CypherQuery:
             case "WHERE":
 
                 statement = self.get_query_part_by_name("WHERE")
+                prefix = ""
+                if self.get_query_part_by_name("DELETE") is not None or self.get_query_part_by_name("SET") is not None:
+                    prefix = self.get_node_prefix_from_match() + "."
 
                 if statement is None:
                     statement = Statement("WHERE", "WHERE", array)
@@ -275,28 +289,29 @@ class CypherQuery:
                     if skip_index > idx:
                         continue
                     if type(token) == sqlparse.sql.Comparison:
-                        command_string = str(token)
+                        command_string = prefix + str(token)
                         # for LIKE and IN keywords
                         for word in token:
                             if str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
-                                parts = str(token).split(" ")
+                                parts = str(command_string).split(" ")
                                 command_string = self.get_correct_command_string(parts[-1], parts[0])
                                 # print(command_string)
                             if str(word).upper() == "IN" or str(word).upper() == "NOT IN":
                                 command_string = command_string.replace("(", "[").replace(")", "]")
+
                         statement.text += command_string
                     # for BETWEEN keyword
                     elif type(token) == sqlparse.sql.Identifier:
                         if str(array[idx + 3]) == "NOT":
                             statement.text += str(array[idx + 3])
                             if str(array[idx + 5]).upper() == "BETWEEN":
-                                statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + str(token) \
-                                                 + " =< " + str(array[idx + 11])
+                                statement.text = statement.text + " " + str(array[idx + 7]) + " <= " +\
+                                                 prefix + str(token) + " =< " + str(array[idx + 11])
                                 skip_index = idx + 11
                         else:
                             if str(array[idx + 3]).upper() == "BETWEEN":
-                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + str(token) \
-                                                 + " =< " + str(array[idx + 9])
+                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " +\
+                                                 prefix + str(token) + " =< " + str(array[idx + 9])
                                 skip_index = idx + 9
                     # other words
                     else:
@@ -460,13 +475,10 @@ class CypherQuery:
             case "SET":
                 statement = Statement("SET", "SET ", array)
 
-                statement_match = self.get_match_part(MatchPart)
                 node_name = ""
-
-                if statement_match is not None:
-                    if len(statement_match.nodes) > 0:
-                        node_name = statement_match.nodes[0].label
-
+                # get prefix from match statement
+                node_name = self.get_node_prefix_from_match()
+                # add prefix to identifiers
                 for token in array:
                     if type(token) == sqlparse.sql.IdentifierList:
                         for idx, val in enumerate(token.get_identifiers()):
