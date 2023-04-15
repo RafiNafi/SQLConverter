@@ -177,7 +177,7 @@ def test_update_node():
 
 def test_update_with_alias():
 
-    query = "UPDATE Customers AS cust" \
+    query = "UPDATE Customers AS cust " \
             "SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt' " \
             "WHERE cust.CustomerID = 1;"
 
