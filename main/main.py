@@ -64,12 +64,21 @@ if __name__ == '__main__':
             "AND cust.City NOT IN ('Stuttgart') " \
             "AND cust.Service LIKE '%ool';"
 
-    query = "SELECT e.EmployeeID, count(*) AS Count " \
+    query14 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
              "AND e.EmployeeID = 100 " \
              "OR e.name = 'Test' " \
              "WHERE e.price = 10;"
+
+    query13 = "SELECT p.name " \
+            "FROM products as p " \
+            "UNION " \
+            "SELECT s.name " \
+            "FROM sold AS s " \
+            "ORDER BY s.name;"
+
+    query = "SELECT p.ProductName, p.UnitPrice FROM products as p ORDER BY p.UnitPrice DESC LIMIT 10;"
 
     # sql_query = sqlvalidator.parse(query)
 

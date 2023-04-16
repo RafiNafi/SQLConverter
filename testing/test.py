@@ -38,9 +38,9 @@ def test_mult_joins():
 
     assert convert_query(query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
                                    "WHERE e.EmployeeID = 100 " \
+                                   "RETURN e.EmployeeID, count(*) AS Count " \
                                    "ORDER BY Count DESC " \
-                                   "LIMIT 10 " \
-                                   "RETURN e.EmployeeID, count(*) AS Count;"
+                                   "LIMIT 10;" \
 
 
 def test_mult_joins_mixed_alias():
@@ -54,10 +54,8 @@ def test_mult_joins_mixed_alias():
 
     assert convert_query(query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
                                    "WHERE EmployeeID = 100 " \
-                                   "ORDER BY count(*) DESC " \
-                                   "RETURN EmployeeID, count(*);"
-
-
+                                   "RETURN EmployeeID, count(*) " \
+                                   "ORDER BY count(*) DESC;"
 def test_where_not_in_and_not_between():
     query = "SELECT p.ProductName, p.UnitPrice " \
             "FROM products AS p " \

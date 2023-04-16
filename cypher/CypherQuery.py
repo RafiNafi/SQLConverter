@@ -6,6 +6,8 @@ keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JO
                       "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
                       "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
+keyword_in_order = ["INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN", "FULL JOIN",
+                    "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
 class CypherQuery:
     def __init__(self):
@@ -45,15 +47,17 @@ class CypherQuery:
         for token in array:
             string_query += str(token)
 
-        if string_query[-1] != " ":
-            string_query += " "
+        # if union then add whitespace before
+        if name == "UNION" or name == "UNION ALL":
+            string_query = " " + string_query
+        else:
+            if string_query[0] != " ":
+                string_query = " " + string_query
+            if string_query[-1] == " ":
+                string_query = string_query[0:-1]
 
         statement = Statement(name, string_query, array)
         self.queryParts.append(statement)
-
-        # if union then add whitespace before
-        if name == "UNION" or name == "UNION ALL":
-            statement.text = " " + statement.text
 
         return statement.text
 
@@ -66,12 +70,15 @@ class CypherQuery:
         return node
 
     def combine_query(self):
+
+        """
         combined_query_string = ""
         # add all query parts except for match and return
         # add optional match at the beginning
         for elem in self.queryParts:
             if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
-                if elem.keyword != "SELECT" and elem.keyword != "DELETE" and elem.keyword != "SET":
+                if elem.keyword != "SELECT" and elem.keyword != "DELETE" and elem.keyword != "SET" \
+                        and elem.keyword != "ORDER BY" and elem.keyword != "LIMIT":
                     if elem.keyword == "HAVING":
                         combined_query_string = elem.text + combined_query_string
                     else:
@@ -86,6 +93,35 @@ class CypherQuery:
             elif type(elem) != OptionalMatchPart:
                 if elem.keyword == "SELECT" or elem.keyword == "DELETE" or elem.keyword == "SET":
                     combined_query_string = combined_query_string + elem.text
+
+        for elem in self.queryParts:
+            if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
+                if elem.keyword == "ORDER BY":
+                    combined_query_string += elem.text
+                elif elem.keyword == "LIMIT":
+                    combined_query_string += elem.text
+        """
+
+        combined_query_string = ""
+
+        for key in keyword_in_order:
+            for elem in self.queryParts:
+                if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
+                    if elem.keyword == key:
+                        combined_query_string += elem.text
+                        self.queryParts.remove(elem)
+                        break
+                else:
+                    if type(elem) == MatchPart and key == "FROM" or type(elem) == MatchPart and key == "UPDATE":
+                        combined_query_string += elem.generate_query_string("MATCH ")
+                        self.queryParts.remove(elem)
+                        break
+                    elif type(elem) == OptionalMatchPart:
+                        if key == "LEFT OUTER JOIN" or key == "RIGHT OUTER JOIN" or \
+                                key == "FULL OUTER JOIN" or key == "FULL JOIN":
+                            combined_query_string += elem.generate_query_string("OPTIONAL MATCH ")
+                            self.queryParts.remove(elem)
+                            break
 
         return combined_query_string
 
