@@ -466,6 +466,25 @@ class CypherQuery:
                 # print(statement_select.text)
                 statement.text += statement_select.text.split("RETURN")[1] + " "
 
+                parsed = sqlparse.parse(statement_select.text)[0]
+                print(parsed.tokens)
+
+                # assumes that every variable or aggregation has an alias
+                new_return_text = ""
+                for token in parsed.tokens:
+                    if type(token) == sqlparse.sql.IdentifierList:
+                        for idf in token:
+                            if type(idf) == sqlparse.sql.Identifier:
+                                new_return_text += str(idf).split(" ")[2]
+                            else:
+                                new_return_text += str(idf)
+                    elif type(token) == sqlparse.sql.Identifier:
+                        new_return_text += str(token).split(" ")[2]
+                    else:
+                        new_return_text += str(token)
+
+                statement_select.text = new_return_text
+
                 self.queryParts.append(statement)
                 return statement.text
             case "UNION" | "UNION ALL":

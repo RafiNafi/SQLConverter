@@ -24,9 +24,9 @@ if __name__ == '__main__':
              "GROUP BY zip " \
              "HAVING population>10000;"
 
-    query0 = "SELECT zipcode AS zip, count(*) AS population " \
-             "FROM Person " \
-             "WHERE e.EmployeeID = 100 " \
+    query = "SELECT p.zipcode AS zip, count(*) AS population " \
+             "FROM Person as p " \
+             "WHERE p.EmployeeID = 100 " \
              "GROUP BY zip " \
              "HAVING population>10000;"
 
@@ -58,27 +58,14 @@ if __name__ == '__main__':
              "ORDER BY Count DESC " \
              "LIMIT 10;"
 
-    query12 = "DELETE FROM Customers AS cust " \
-            "WHERE cust.CustomerID BETWEEN 1 and 100 " \
-            "AND cust.CustomerName='Alfred' " \
-            "AND cust.City NOT IN ('Stuttgart') " \
-            "AND cust.Service LIKE '%ool';"
-
-    query14 = "SELECT e.EmployeeID, count(*) AS Count " \
+    query12 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e " \
              "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID) " \
              "AND e.EmployeeID = 100 " \
              "OR e.name = 'Test' " \
              "WHERE e.price = 10;"
 
-    query13 = "SELECT p.name " \
-            "FROM products as p " \
-            "UNION " \
-            "SELECT s.name " \
-            "FROM sold AS s " \
-            "ORDER BY s.name;"
-
-    query = "SELECT p.ProductName, p.UnitPrice FROM products as p ORDER BY p.UnitPrice DESC LIMIT 10;"
+    query0 = "SELECT * FROM prüfen WHERE Note < (SELECT avg(Note) FROM prüfen);"
 
     # sql_query = sqlvalidator.parse(query)
 
