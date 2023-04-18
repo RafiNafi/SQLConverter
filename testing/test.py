@@ -16,6 +16,14 @@ def test_simple_select_wildcard():
     assert convert_query(query) == "MATCH (p:products) " \
                                    "RETURN p;"
 
+def test_simple_where():
+    query = "SELECT supp.SupplierName " \
+            "FROM Suppliers AS supp " \
+            "WHERE supp.SupplierName = 'Adidas';"
+
+    assert convert_query(query) ==  "MATCH (supp:Suppliers) " \
+                                    "WHERE supp.SupplierName = 'Adidas' " \
+                                    "RETURN supp.SupplierName;"
 
 def test_check_simple_join():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -180,3 +188,23 @@ def test_update_with_alias():
             "WHERE cust.CustomerID = 1;"
 
     assert convert_query(query) == "MATCH (cust:Customers) WHERE cust.CustomerID = 1 SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt';"
+
+def test_simple_having():
+
+    query = "SELECT p.zipcode AS zip, count(*) AS population " \
+             "FROM Person as p " \
+             "WHERE p.EmployeeID = 100 " \
+             "GROUP BY zip " \
+             "HAVING population>10000;"
+
+    assert convert_query(query) == "MATCH (p:Person) WITH p.zipcode AS zip, count(*) AS population WHERE p.EmployeeID = 100 AND population>10000 RETURN zip, population;"
+
+def test_having_multiple_aggregations():
+
+    query = "SELECT COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c " \
+            "FROM Customers AS Cust " \
+            "GROUP BY c " \
+            "HAVING count > 5 AND sum < 10 " \
+            "ORDER BY count DESC;"
+
+    assert convert_query(query) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c WHERE  count > 5 AND sum < 10  RETURN count, sum, c ORDER BY count DESC;"
