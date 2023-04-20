@@ -1,4 +1,3 @@
-import sqlvalidator
 import sqlparse
 from cypher.CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
@@ -8,6 +7,7 @@ keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JO
 
 keyword_in_order = ["INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN", "FULL JOIN",
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
+
 
 class CypherQuery:
     def __init__(self):
@@ -237,7 +237,6 @@ class CypherQuery:
                     statement.add_node(Node(as_parts[0], as_parts[2]))
                     # if this from is part of a delete statement
                     if opt_delete_statement is not None:
-
                         opt_delete_statement.text += as_parts[2]
                 else:
                     statement.add_node(Node(str(t), str(t)[0].lower()))
@@ -288,14 +287,13 @@ class CypherQuery:
                             # check for wildcards in identifiers
                             if type(obj) == sqlparse.sql.Identifier and obj.is_wildcard() and len(str(obj)) > 1:
                                 item = str(obj).split(".")[0]
-
                             if index == len(list(t.get_identifiers())) - 1:
                                 statement.text = statement.text + item
                             else:
                                 statement.text = statement.text + item + ", "
                     elif type(t) == sqlparse.sql.Identifier or str(t) == "*":
 
-                        if len(str(t)) > 1:
+                        if len(str(t)) > 1 and "*" in str(t):
                             statement.text = statement.text + str(t).split(".")[0]
                         else:
                             statement.text = statement.text + str(t)
@@ -349,12 +347,12 @@ class CypherQuery:
                         if str(array[idx + 3]) == "NOT":
                             statement.text += str(array[idx + 3])
                             if str(array[idx + 5]).upper() == "BETWEEN":
-                                statement.text = statement.text + " " + str(array[idx + 7]) + " <= " +\
+                                statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + \
                                                  prefix + str(token) + " =< " + str(array[idx + 11])
                                 skip_index = idx + 11
                         else:
                             if str(array[idx + 3]).upper() == "BETWEEN":
-                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " +\
+                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
                                                  prefix + str(token) + " =< " + str(array[idx + 9])
                                 skip_index = idx + 9
                     # other words
@@ -467,7 +465,6 @@ class CypherQuery:
                 statement.text += statement_select.text.split("RETURN")[1] + " "
 
                 parsed = sqlparse.parse(statement_select.text)[0]
-                print(parsed.tokens)
 
                 # assumes that every variable or aggregation has an alias
                 new_return_text = ""
@@ -546,13 +543,13 @@ class CypherQuery:
                         for idx, val in enumerate(token.get_identifiers()):
                             if "." in str(val):
                                 node_name = ""
-                            statement.text += node_name+str(val)
+                            statement.text += node_name + str(val)
                             if idx != len(list(token.get_identifiers())) - 1:
                                 statement.text += ", "
                     elif type(token) == sqlparse.sql.Identifier:
                         if "." in str(token):
                             node_name = ""
-                        statement.text += node_name+str(token)
+                        statement.text += node_name + str(token)
 
                 self.queryParts.append(statement)
                 return statement.text

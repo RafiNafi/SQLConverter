@@ -4,6 +4,8 @@ from cypher.CypherQuery import CypherQuery
 def convert_query(query_parts):
     queries_list = []
 
+    # check for number of whitespaces
+
     # parse and print string
     parsed = sqlparse.parse(query_parts)[0]
     print(parsed.tokens)
