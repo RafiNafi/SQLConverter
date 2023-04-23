@@ -208,3 +208,15 @@ def test_having_multiple_aggregations():
             "ORDER BY count DESC;"
 
     assert convert_query(query) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c WHERE  count > 5 AND sum < 10  RETURN count, sum, c ORDER BY count DESC;"
+
+def test_switch_case():
+
+    query = "SELECT od.OrderID, od.Quantity, " \
+            "CASE " \
+            "WHEN od.Quantity > 30 THEN 'greater 30' " \
+            "WHEN od.Quantity = 30 THEN 'is 30' " \
+            "ELSE 'under 30' " \
+            "END AS QuantityText " \
+            "FROM OrderDetails AS od;"
+
+    assert convert_query(query) == "MATCH (od:OrderDetails) RETURN od.OrderID, od.Quantity, CASE WHEN od.Quantity > 30 THEN 'greater 30' WHEN od.Quantity = 30 THEN 'is 30' ELSE 'under 30' END AS QuantityText;"
