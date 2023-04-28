@@ -1,13 +1,66 @@
 import sqlparse
+import re
 from cypher.CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
 keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
                       "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
                       "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
-keyword_in_order = ["INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN", "FULL JOIN",
+keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN", "FULL JOIN",
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
+counter = 0
+
+def convert_query(query_parts):
+    queries_list = []
+
+    print("START CONVERTING NEW QUERY")
+    # check for number of whitespaces
+
+    # parse and print string
+    parsed = sqlparse.parse(query_parts)[0]
+    print(parsed.tokens)
+
+    last_index = 0
+    for idx, token in enumerate(parsed.tokens):
+        if str(token) == "UNION ALL" or str(token) == "UNION":
+
+            string_query = ""
+            for t in parsed.tokens[last_index:idx]:
+                string_query += str(t)
+
+            queries_list.append(string_query)
+            queries_list.append(str(token) + str(parsed.tokens[idx + 1]))
+            last_index = idx + 2
+
+        if len(parsed.tokens) == idx + 1:
+
+            string_query = ""
+            for t in parsed.tokens[last_index:idx + 1]:
+                string_query += str(t)
+
+            queries_list.append(string_query)
+
+    print(queries_list)
+
+    print("--------------------------------")
+    # combine all queries
+    combined_result_query = ""
+    for single_query in queries_list:
+        query_main = CypherQuery()
+        result = query_main.query_conversion(single_query)
+        combined_result_query += result
+
+    # add semicolon and delete unnecessary whitespace
+    combined_result_query = delete_obsolete_whitespaces_and_semicolons(combined_result_query) + ";"
+
+    return combined_result_query
+
+def delete_obsolete_whitespaces_and_semicolons(result_query):
+
+    result_query = result_query.replace(";","")
+
+    return re.sub(" +"," ",result_query)
 
 class CypherQuery:
     def __init__(self):
@@ -33,11 +86,11 @@ class CypherQuery:
         text = text.replace("\"", "")
 
         if text[-1] == "%" and text[0] == "%":
-            return variable + " CONTAINS \"" + text[1:-1] + "\""
+            return variable + " CONTAINS \"" + text[1:-1] + "\" "
         elif text[0] == "%":
-            return variable + " ENDS WITH \"" + text[1:] + "\""
+            return variable + " ENDS WITH \"" + text[1:] + "\" "
         elif text[-1] == "%":
-            return variable + " STARTS WITH \"" + text[:-1] + "\""
+            return variable + " STARTS WITH \"" + text[:-1] + "\" "
         elif text[-1] != "%" and text[0] != "%" and ("%" in text) and (text.count("%") == 1):
             return variable + " STARTS WITH \"" + text.split("%")[0] + "\" AND " + variable + " ENDS WITH \"" + \
                    text.split("%")[1] + "\""
@@ -291,7 +344,7 @@ class CypherQuery:
                                 statement.text = statement.text + item
                             else:
                                 statement.text = statement.text + item + ", "
-                    elif type(t) == sqlparse.sql.Identifier or str(t) == "*":
+                    elif type(t) == sqlparse.sql.Identifier or type(t) == sqlparse.sql.Function or str(t) == "*":
 
                         if len(str(t)) > 1 and "*" in str(t):
                             statement.text = statement.text + str(t).split(".")[0]
@@ -327,14 +380,47 @@ class CypherQuery:
                         # check if alias exists already
                         if "." in str(token):
                             prefix = ""
-                        command_string = prefix + str(token)
+
+                        # check for subquery
+                        check = str(token).partition("(")[2]
+                        print(check)
+                        if check.split(" ")[0] == "SELECT":
+                            command_string = prefix + str(token).partition("(")[0]
+                        else:
+                            command_string = prefix + str(token)
+
+                        print(str(token))
                         # for LIKE and IN keywords
                         for word in token:
-                            if str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
+
+                            if type(word) == sqlparse.sql.Parenthesis:
+
+                                sub_clause = str(word)[1:-1]
+                                if sub_clause.split(" ")[0] == "SELECT":
+                                    print("Subquery: " + sub_clause)
+
+                                    result = convert_query(sub_clause)
+
+                                    global counter
+                                    counter = counter + 1
+
+                                    sub_result_string = "CALL{" + result + " AS sub" + str(
+                                        counter) + "} WITH * "
+
+                                    print("RESULT: " + sub_result_string)
+
+                                    sub_statement = Statement("SUBQUERY", sub_result_string, [])
+                                    self.queryParts.append(sub_statement)
+
+                                    command_string += "sub"+str(counter) + " "
+                                    print("COMMAND_STRING: " + command_string)
+                                    print("-+-+-+-")
+
+                            elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")
                                 command_string = self.get_correct_command_string(parts[-1], parts[0])
                                 # print(command_string)
-                            if str(word).upper() == "IN" or str(word).upper() == "NOT IN":
+                            elif str(word).upper() == "IN" or str(word).upper() == "NOT IN":
                                 command_string = command_string.replace("(", "[").replace(")", "]")
 
                         statement.text += command_string
