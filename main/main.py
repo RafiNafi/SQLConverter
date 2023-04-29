@@ -1,5 +1,5 @@
 import sqlvalidator
-from cypher.CypherQuery import convert_query
+from cypher.CypherQuery import convert
 
 if __name__ == '__main__':
 
@@ -60,10 +60,8 @@ if __name__ == '__main__':
             "FROM Suppliers AS supp " \
             "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
 
-    query10 = "SELECT p.product_name, p.unit_price FROM products AS p WHERE p.unit_price > (SELECT avg(b.unit_price) FROM products AS b);"
-
-    query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
-           "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
+    query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
+            "AND product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%');"
 
     # sql_query = sqlvalidator.parse(query)
 
@@ -76,6 +74,6 @@ if __name__ == '__main__':
 
     print("--------------------------------")
 
-    print(convert_query(query))
+    print(convert(query))
 
     print("--------------------------------")

@@ -6,10 +6,19 @@ keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JO
                       "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
                       "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
-keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN", "FULL JOIN",
+keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN",
+                    "FULL JOIN",
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
 counter = 0
+
+
+# wrapper to set initial variables
+def convert(query_parts):
+    global counter
+    counter = 0
+    return convert_query(query_parts)
+
 
 def convert_query(query_parts):
     queries_list = []
@@ -56,11 +65,12 @@ def convert_query(query_parts):
 
     return combined_result_query
 
+
 def delete_obsolete_whitespaces_and_semicolons(result_query):
+    result_query = result_query.replace(";", "")
 
-    result_query = result_query.replace(";","")
+    return re.sub(" +", " ", result_query)
 
-    return re.sub(" +"," ",result_query)
 
 class CypherQuery:
     def __init__(self):
@@ -157,24 +167,25 @@ class CypherQuery:
 
         combined_query_string = ""
 
+        # combine query based on keyword order in array
         for key in keyword_in_order:
             for elem in self.queryParts:
                 if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
                     if elem.keyword == key:
                         combined_query_string += elem.text
-                        self.queryParts.remove(elem)
-                        break
+                        # self.queryParts.remove(elem)
+                        # break
                 else:
                     if type(elem) == MatchPart and key == "FROM" or type(elem) == MatchPart and key == "UPDATE":
                         combined_query_string += elem.generate_query_string("MATCH ")
                         self.queryParts.remove(elem)
-                        break
+                        # break
                     elif type(elem) == OptionalMatchPart:
                         if key == "LEFT OUTER JOIN" or key == "RIGHT OUTER JOIN" or \
                                 key == "FULL OUTER JOIN" or key == "FULL JOIN":
                             combined_query_string += elem.generate_query_string("OPTIONAL MATCH ")
                             self.queryParts.remove(elem)
-                            break
+                            # break
 
         return combined_query_string
 
@@ -383,7 +394,7 @@ class CypherQuery:
 
                         # check for subquery
                         check = str(token).partition("(")[2]
-                        print(check)
+                        # print(check)
                         if check.split(" ")[0] == "SELECT":
                             command_string = prefix + str(token).partition("(")[0]
                         else:
@@ -397,7 +408,7 @@ class CypherQuery:
 
                                 sub_clause = str(word)[1:-1]
                                 if sub_clause.split(" ")[0] == "SELECT":
-                                    print("Subquery: " + sub_clause)
+                                    # print("Subquery: " + sub_clause)
 
                                     result = convert_query(sub_clause)
 
@@ -407,14 +418,14 @@ class CypherQuery:
                                     sub_result_string = "CALL{" + result + " AS sub" + str(
                                         counter) + "} WITH * "
 
-                                    print("RESULT: " + sub_result_string)
+                                    # print("RESULT: " + sub_result_string)
 
                                     sub_statement = Statement("SUBQUERY", sub_result_string, [])
                                     self.queryParts.append(sub_statement)
 
-                                    command_string += "sub"+str(counter) + " "
-                                    print("COMMAND_STRING: " + command_string)
-                                    print("-+-+-+-")
+                                    command_string += "sub" + str(counter) + " "
+                                    # print("COMMAND_STRING: " + command_string)
+                                    # print("-+-+-+-")
 
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")
