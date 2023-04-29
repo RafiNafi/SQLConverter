@@ -265,7 +265,7 @@ class CypherQuery:
         return added_conditions_list
 
     def update_where_clause(self, array, index, text):
-
+        # updates or creates new where clause
         statement_where = self.get_query_part_by_name("WHERE")
 
         if statement_where is None:
@@ -275,7 +275,18 @@ class CypherQuery:
             statement_where.text += text
 
         for token in array[index:]:
-            statement_where.text += str(token)
+
+            # check for subquery
+            if type(token) == sqlparse.sql.Comparison:
+                for word in token:
+                    if type(word) == sqlparse.sql.Parenthesis:
+                        if self.create_subquery(word):
+                            statement_where.text += "sub" + str(counter) + " "
+                    else:
+                        statement_where.text += str(word)
+            else:
+                statement_where.text += str(token)
+
         statement_where.text += " "
 
         return
@@ -326,6 +337,7 @@ class CypherQuery:
 
         sub_clause = str(text)[1:-1]
         if sub_clause.split(" ")[0] == "SELECT":
+            # recursion
             result = convert_query(sub_clause)
 
             global counter
@@ -353,7 +365,6 @@ class CypherQuery:
 
     def transform_query_part(self, text, array):
 
-        global counter
         # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
             text = "WHERE"
@@ -569,7 +580,6 @@ class CypherQuery:
                 statement = Statement("HAVING", "WITH", array)
 
                 # create or update where statement
-
                 self.update_where_clause(array, 1, "AND")
 
                 # copy variables from return to with clause
