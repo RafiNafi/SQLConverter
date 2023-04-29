@@ -229,7 +229,7 @@ class CypherQuery:
 
         # transform query parts
         for i in range(len(self.sql_query_parts)):
-            print(self.transformQueryPart(str(self.sql_query_parts[i][0]).upper(), self.sql_query_parts[i]))
+            print(self.transform_query_part(str(self.sql_query_parts[i][0]).upper(), self.sql_query_parts[i]))
 
         return self.combine_query()
 
@@ -322,7 +322,38 @@ class CypherQuery:
 
         return prefix
 
-    def transformQueryPart(self, text, array):
+    def create_subquery(self, text):
+
+        sub_clause = str(text)[1:-1]
+        if sub_clause.split(" ")[0] == "SELECT":
+            result = convert_query(sub_clause)
+
+            global counter
+            counter = counter + 1
+
+            sub_result_string = "CALL{" + result + " AS sub" + str(
+                counter) + "} WITH * "
+
+            sub_statement = Statement("SUBQUERY", sub_result_string, [])
+            self.queryParts.append(sub_statement)
+            return True
+
+        return False
+
+    def check_for_identifier_positions(self, array, pos, text):
+
+        for index, token in enumerate(array):
+            if type(token) == sqlparse.sql.IdentifierList or type(token) == sqlparse.sql.Identifier:
+                if index < pos:
+                    text = ", " + text
+                elif index > pos:
+                    text += ", "
+
+        return text
+
+    def transform_query_part(self, text, array):
+
+        global counter
         # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
             text = "WHERE"
@@ -340,7 +371,7 @@ class CypherQuery:
             case "SELECT":
                 statement = Statement("SELECT", "RETURN ", array)
 
-                for t in array:
+                for pos, t in enumerate(array):
                     if str(t) == "DISTINCT":
                         statement.text = statement.text + "DISTINCT "
 
@@ -361,6 +392,10 @@ class CypherQuery:
                             statement.text = statement.text + str(t).split(".")[0]
                         else:
                             statement.text = statement.text + str(t)
+                    elif type(t) == sqlparse.sql.Parenthesis:
+
+                            if self.create_subquery(t):
+                                statement.text += self.check_for_identifier_positions(array, pos, "sub" + str(counter))
 
                 self.queryParts.append(statement)
 
@@ -406,26 +441,8 @@ class CypherQuery:
 
                             if type(word) == sqlparse.sql.Parenthesis:
 
-                                sub_clause = str(word)[1:-1]
-                                if sub_clause.split(" ")[0] == "SELECT":
-                                    # print("Subquery: " + sub_clause)
-
-                                    result = convert_query(sub_clause)
-
-                                    global counter
-                                    counter = counter + 1
-
-                                    sub_result_string = "CALL{" + result + " AS sub" + str(
-                                        counter) + "} WITH * "
-
-                                    # print("RESULT: " + sub_result_string)
-
-                                    sub_statement = Statement("SUBQUERY", sub_result_string, [])
-                                    self.queryParts.append(sub_statement)
-
+                                if self.create_subquery(word):
                                     command_string += "sub" + str(counter) + " "
-                                    # print("COMMAND_STRING: " + command_string)
-                                    # print("-+-+-+-")
 
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")

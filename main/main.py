@@ -60,9 +60,10 @@ if __name__ == '__main__':
             "FROM Suppliers AS supp " \
             "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
 
-    query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
+    query10 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
             "AND product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%');"
 
+    query = "SELECT PersNr, (SELECT sum(SWS) AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ) FROM Professoren;"
     # sql_query = sqlvalidator.parse(query)
 
     # check if query valid
