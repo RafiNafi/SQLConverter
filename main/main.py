@@ -54,16 +54,19 @@ if __name__ == '__main__':
              "OR e.name = 'Test' " \
              "WHERE e.price = 10;"
 
-    query8 = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>0;"
+    query8 = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>10;"
 
     query9 = "SELECT supp.SupplierName " \
             "FROM Suppliers AS supp " \
             "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
 
-    query10 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
-            "AND product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%');"
+    query10 = "SELECT product_name, unit_price FROM products, (SELECT avg(unit_price) AS test FROM products) AS avr WHERE unit_price < avr.test"
 
-    query = "SELECT PersNr, (SELECT sum(SWS) AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ) FROM Professoren;"
+    query11 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
+           "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
+
+    query = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
+
     # sql_query = sqlvalidator.parse(query)
 
     # check if query valid

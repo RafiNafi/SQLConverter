@@ -11,16 +11,17 @@ keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
 counter = 0
+previous_name = ""
 
 
 # wrapper to set initial variables
 def convert(query_parts):
     global counter
     counter = 0
-    return convert_query(query_parts)
+    return convert_query(query_parts, False)
 
 
-def convert_query(query_parts):
+def convert_query(query_parts, is_subquery):
     queries_list = []
 
     print("START CONVERTING NEW QUERY")
@@ -56,7 +57,7 @@ def convert_query(query_parts):
     # combine all queries
     combined_result_query = ""
     for single_query in queries_list:
-        query_main = CypherQuery()
+        query_main = CypherQuery(is_subquery)
         result = query_main.query_conversion(single_query)
         combined_result_query += result
 
@@ -73,9 +74,10 @@ def delete_obsolete_whitespaces_and_semicolons(result_query):
 
 
 class CypherQuery:
-    def __init__(self):
+    def __init__(self, is_subquery=False):
         self.queryParts = []
         self.sql_query_parts = []
+        self.is_subquery = is_subquery
 
     def get_match_part(self, typ):
         for query in self.queryParts:
@@ -134,36 +136,21 @@ class CypherQuery:
 
     def combine_query(self):
 
-        """
-        combined_query_string = ""
-        # add all query parts except for match and return
-        # add optional match at the beginning
-        for elem in self.queryParts:
-            if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
-                if elem.keyword != "SELECT" and elem.keyword != "DELETE" and elem.keyword != "SET" \
-                        and elem.keyword != "ORDER BY" and elem.keyword != "LIMIT":
-                    if elem.keyword == "HAVING":
-                        combined_query_string = elem.text + combined_query_string
-                    else:
-                        combined_query_string += elem.text
-            elif type(elem) == OptionalMatchPart:
-                combined_query_string = elem.generate_query_string("OPTIONAL MATCH ") + combined_query_string
+        # add subquery name to RETURN before combining
+        if self.is_subquery:
+            statement_r = self.get_query_part_by_name("SELECT")
 
-        # add match part at the beginning and return or delete part at the end
-        for elem in self.queryParts:
-            if type(elem) == MatchPart:
-                combined_query_string = elem.generate_query_string("MATCH ") + combined_query_string
-            elif type(elem) != OptionalMatchPart:
-                if elem.keyword == "SELECT" or elem.keyword == "DELETE" or elem.keyword == "SET":
-                    combined_query_string = combined_query_string + elem.text
+            # works at the moment only for one variable in select
+            if "AS" not in statement_r.text.split(" ") and "as" not in statement_r.text.split(" "):
+                statement_r.text += " AS sub" + str(counter)
 
-        for elem in self.queryParts:
-            if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
-                if elem.keyword == "ORDER BY":
-                    combined_query_string += elem.text
-                elif elem.keyword == "LIMIT":
-                    combined_query_string += elem.text
-        """
+            parsed = sqlparse.parse(statement_r.text)[0]
+            for token in parsed.tokens:
+                if type(token) == sqlparse.sql.Identifier:
+                    temp_arr = str(token).split(" ")
+                    if "AS" in temp_arr or "as" in temp_arr:
+                        global previous_name
+                        previous_name = temp_arr[-1]
 
         combined_query_string = ""
 
@@ -266,6 +253,7 @@ class CypherQuery:
 
     def update_where_clause(self, array, index, text):
         # updates or creates new where clause
+        global counter
         statement_where = self.get_query_part_by_name("WHERE")
 
         if statement_where is None:
@@ -281,7 +269,9 @@ class CypherQuery:
                 for word in token:
                     if type(word) == sqlparse.sql.Parenthesis:
                         if self.create_subquery(word):
-                            statement_where.text += "sub" + str(counter) + " "
+                            statement_where.text += self.get_correct_subquery_alias() + " "
+                            counter += 1
+
                     else:
                         statement_where.text += str(word)
             else:
@@ -334,23 +324,33 @@ class CypherQuery:
         return prefix
 
     def create_subquery(self, text):
+        global counter
 
         sub_clause = str(text)[1:-1]
         if sub_clause.split(" ")[0] == "SELECT":
             # recursion
-            result = convert_query(sub_clause)
 
-            global counter
-            counter = counter + 1
+            result = convert_query(sub_clause, True)
 
-            sub_result_string = "CALL{" + result + " AS sub" + str(
-                counter) + "} WITH * "
+            sub_result_string = "CALL{" + result + "} WITH * "
 
             sub_statement = Statement("SUBQUERY", sub_result_string, [])
             self.queryParts.append(sub_statement)
             return True
 
         return False
+
+
+    def get_correct_subquery_alias(self):
+        global previous_name
+
+        if previous_name != "":
+            name = previous_name
+            previous_name = ""
+            return name
+        else:
+            return " sub" + str(counter)
+
 
     def check_for_identifier_positions(self, array, pos, text):
 
@@ -364,7 +364,7 @@ class CypherQuery:
         return text
 
     def transform_query_part(self, text, array):
-
+        global counter
         # if WHERE clause then cut into further pieces
         if str(array[0]).split(" ")[0] == "WHERE":
             text = "WHERE"
@@ -380,7 +380,9 @@ class CypherQuery:
 
         match text:
             case "SELECT":
-                statement = Statement("SELECT", "RETURN ", array)
+                statement = Statement("SELECT", " RETURN ", array)
+
+                temp = str(counter)
 
                 for pos, t in enumerate(array):
                     if str(t) == "DISTINCT":
@@ -404,9 +406,9 @@ class CypherQuery:
                         else:
                             statement.text = statement.text + str(t)
                     elif type(t) == sqlparse.sql.Parenthesis:
-
-                            if self.create_subquery(t):
-                                statement.text += self.check_for_identifier_positions(array, pos, "sub" + str(counter))
+                        if self.create_subquery(t):
+                            statement.text += self.check_for_identifier_positions(array, pos, self.get_correct_subquery_alias())
+                            counter += 1
 
                 self.queryParts.append(statement)
 
@@ -451,9 +453,9 @@ class CypherQuery:
                         for word in token:
 
                             if type(word) == sqlparse.sql.Parenthesis:
-
                                 if self.create_subquery(word):
-                                    command_string += "sub" + str(counter) + " "
+                                    command_string += self.get_correct_subquery_alias()
+                                    counter += 1
 
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")
