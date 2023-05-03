@@ -227,8 +227,8 @@ def test_subquery_one_statement():
               "FROM products AS p " \
               "WHERE p.unit_price > (SELECT avg(b.unit_price) FROM products AS b);"
 
-    assert convert(query) == "CALL{MATCH (b:products) RETURN avg(b.unit_price) AS sub1} WITH * " \
-                                   "MATCH (p:products) WHERE p.unit_price > sub1 RETURN p.product_name, p.unit_price;"
+    assert convert(query) == "CALL{MATCH (b:products) RETURN avg(b.unit_price) AS sub0} WITH * " \
+                                   "MATCH (p:products) WHERE p.unit_price > sub0 RETURN p.product_name, p.unit_price;"
 
 def test_subquery_where_nested_statements():
 
@@ -236,29 +236,47 @@ def test_subquery_where_nested_statements():
            "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
 
 
-    assert convert(query) == "CALL{CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub1} WITH * " \
-                                    "MATCH (p:products) WHERE product_name IN sub1 RETURN avg(unit_price) AS sub2} WITH * " \
-                                    "MATCH (p:products) WHERE unit_price > sub2 RETURN product_name, unit_price;"
+    assert convert(query) == "CALL{CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub0} WITH * " \
+                                    "MATCH (p:products) WHERE product_name IN sub0 RETURN avg(unit_price) AS sub1} WITH * " \
+                                    "MATCH (p:products) WHERE unit_price > sub1 RETURN product_name, unit_price;"
 
 def test_subquery_where_multiple_statement():
 
     query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
             "AND product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%');"
 
-    assert convert(query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub1} WITH * " \
-                                   "CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub2} WITH * " \
-                                   "MATCH (p:products) WHERE unit_price > sub1 AND product_name IN sub2 RETURN product_name, unit_price;"
+    assert convert(query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub0} WITH * " \
+                                   "CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub1} WITH * " \
+                                   "MATCH (p:products) WHERE unit_price > sub0 AND product_name IN sub1 RETURN product_name, unit_price;"
 
 def test_subquery_select():
 
-    query = "SELECT name, (SELECT sum(SWS) AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ), PersNr FROM Professoren;"
+    query = "SELECT name, (SELECT sum(SWS) AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr), PersNr FROM Professoren;"
 
-    assert convert(query) == "CALL{MATCH (v:Vorlesungen) WHERE gelesenVon=PersNr RETURN sum(SWS) AS Lehrbelastung AS sub1} WITH * " \
-                             "MATCH (p:Professoren) RETURN name, sub1, PersNr;"
+    assert convert(query) == "CALL{MATCH (v:Vorlesungen) WHERE gelesenVon=PersNr RETURN sum(SWS) AS Lehrbelastung} WITH * " \
+                             "MATCH (p:Professoren) RETURN name, Lehrbelastung, PersNr;"
 
 def test_subquery_having():
 
     query = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>(SELECT avg(unit_price) FROM products);"
 
-    assert convert(query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub1} WITH * " \
-                             "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS numb WHERE numb>sub1 RETURN name, numb;"
+    assert convert(query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub0} WITH * " \
+                             "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS numb WHERE numb>sub0 RETURN name, numb;"
+
+def test_subquery_exists():
+
+    query = "SELECT s.company_name " \
+            "FROM suppliers AS s " \
+            "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
+
+    assert convert(query) == "MATCH (s:suppliers) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN s.company_name;"
+
+def test_mixed_select_subquery_and_exists_subquery():
+
+    query = "SELECT PersNr, " \
+            "(SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE " \
+            "EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) " \
+            "FROM Professoren;"
+
+    assert convert(query) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN SWS AS Lehrbelastung}" \
+                              " WITH * MATCH (p:Professoren) RETURN PersNr, Lehrbelastung;"
