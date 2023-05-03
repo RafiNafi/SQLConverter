@@ -18,10 +18,10 @@ previous_name = ""
 def convert(query_parts):
     global counter
     counter = 0
-    return convert_query(query_parts, False)
+    return convert_query(query_parts, False, False)
 
 
-def convert_query(query_parts, is_subquery):
+def convert_query(query_parts, is_subquery, is_exists_subquery):
     queries_list = []
 
     print("START CONVERTING NEW QUERY")
@@ -57,7 +57,7 @@ def convert_query(query_parts, is_subquery):
     # combine all queries
     combined_result_query = ""
     for single_query in queries_list:
-        query_main = CypherQuery(is_subquery)
+        query_main = CypherQuery(is_subquery, is_exists_subquery)
         result = query_main.query_conversion(single_query)
         combined_result_query += result
 
@@ -74,10 +74,11 @@ def delete_obsolete_whitespaces_and_semicolons(result_query):
 
 
 class CypherQuery:
-    def __init__(self, is_subquery=False):
+    def __init__(self, is_subquery=False, is_exists_subquery=False):
         self.queryParts = []
         self.sql_query_parts = []
         self.is_subquery = is_subquery
+        self.is_exists_subquery = is_exists_subquery
 
     def get_match_part(self, typ):
         for query in self.queryParts:
@@ -89,6 +90,15 @@ class CypherQuery:
             if isinstance(query, Statement):
                 if query.keyword == name:
                     return query
+
+    def remove_query_part_by_name(self, name):
+        for query in self.queryParts:
+            if isinstance(query, Statement):
+                if query.keyword == name:
+                    self.queryParts.remove(query)
+                    return True
+
+        return False
 
     def check_for_subquery(self, array):
         return
@@ -137,7 +147,7 @@ class CypherQuery:
     def combine_query(self):
 
         # add subquery name to RETURN before combining
-        if self.is_subquery:
+        if self.is_subquery and not self.is_exists_subquery:
             statement_r = self.get_query_part_by_name("SELECT")
 
             # works at the moment only for one variable in select
@@ -151,6 +161,8 @@ class CypherQuery:
                     if "AS" in temp_arr or "as" in temp_arr:
                         global previous_name
                         previous_name = temp_arr[-1]
+        elif self.is_exists_subquery:
+            self.remove_query_part_by_name("SELECT")
 
         combined_query_string = ""
 
@@ -330,7 +342,7 @@ class CypherQuery:
         if sub_clause.split(" ")[0] == "SELECT":
             # recursion
 
-            result = convert_query(sub_clause, True)
+            result = convert_query(sub_clause, True, False)
 
             sub_result_string = "CALL{" + result + "} WITH * "
 
@@ -482,6 +494,20 @@ class CypherQuery:
                                 statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
                                                  prefix + str(token) + " =< " + str(array[idx + 9])
                                 skip_index = idx + 9
+                    # exists
+                    elif type(token) == sqlparse.sql.Function:
+                        for idx, part in enumerate(token):
+                            if str(part) == "EXISTS":
+
+                                sub_clause = str(token[idx+1])[1:-1]
+                                print(sub_clause)
+
+                                if sub_clause.split(" ")[0] == "SELECT":
+                                    # recursion
+                                    result = convert_query(sub_clause, True, True)
+
+                                    statement.text += "EXISTS{" + result + "}"
+
                     # other words
                     else:
                         if str(token) != ";":
