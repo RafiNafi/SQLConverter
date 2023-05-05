@@ -375,6 +375,45 @@ class CypherQuery:
 
         return text
 
+    def add_join(self, match_query, comp, joined_node):
+        values = comp.split(" ")
+
+        # checks for name first then label
+
+        node1 = self.get_node_from_match(match_query, values[0].split(".")[0])
+        node2 = self.get_node_from_match(match_query, values[len(values) - 1].split(".")[0])
+
+        # for one match and one optional match
+        query_other_match = self.get_match_part(MatchPart)
+
+        if type(match_query) == MatchPart:
+            query_other_match = self.get_match_part(OptionalMatchPart)
+
+        if query_other_match is not None:
+            if node1 is None:
+                node1 = self.get_node_from_match(query_other_match, values[0].split(".")[0])
+            if node2 is None:
+                node2 = self.get_node_from_match(query_other_match,
+                                                 values[len(values) - 1].split(".")[0])
+
+        # relationship name variable
+        # direction is relevant
+        dir1 = "-"
+        dir2 = "-"
+        if joined_node == node1:
+            dir1 = "-"
+            dir2 = "->"
+        elif joined_node == node2:
+            dir1 = "<-"
+            dir2 = "-"
+
+        rel = Relationship("relationship", "", node2, node1, dir1, dir2)
+        # add relationship to node
+        node1.add_relationship(rel)
+        # add relationship to match query part
+        match_query.add_relationship(rel)
+        return
+
     def transform_query_part(self, text, array):
         global counter
         # if WHERE clause then cut into further pieces
@@ -554,42 +593,9 @@ class CypherQuery:
                     if type(token) == sqlparse.sql.Parenthesis:
                         for comp in token:
                             if type(comp) == sqlparse.sql.Comparison:
-                                values = str(comp).split(" ")
-
-                                # checks for name first then label
-
-                                node1 = self.get_node_from_match(match_query, values[0].split(".")[0])
-                                node2 = self.get_node_from_match(match_query, values[len(values) - 1].split(".")[0])
-
-                                # for one match and one optional match
-                                query_other_match = self.get_match_part(MatchPart)
-
-                                if type(match_query) == MatchPart:
-                                    query_other_match = self.get_match_part(OptionalMatchPart)
-
-                                if query_other_match is not None:
-                                    if node1 is None:
-                                        node1 = self.get_node_from_match(query_other_match, values[0].split(".")[0])
-                                    if node2 is None:
-                                        node2 = self.get_node_from_match(query_other_match,
-                                                                         values[len(values) - 1].split(".")[0])
-
-                                # relationship name variable
-                                # direction is relevant
-                                dir1 = "-"
-                                dir2 = "-"
-                                if joined_node == node1:
-                                    dir1 = "-"
-                                    dir2 = "->"
-                                elif joined_node == node2:
-                                    dir1 = "<-"
-                                    dir2 = "-"
-
-                                rel = Relationship("relationship", "", node2, node1, dir1, dir2)
-                                # add relationship to node
-                                node1.add_relationship(rel)
-                                # add relationship to match query part
-                                match_query.add_relationship(rel)
+                                self.add_join(match_query, str(comp), joined_node)
+                    if type(token) == sqlparse.sql.Comparison:
+                        self.add_join(match_query, str(token), joined_node)
 
                 # look for other conditions in join
                 parts = self.cutout_keyword_parts_from_array(["AND", "OR"], array)
