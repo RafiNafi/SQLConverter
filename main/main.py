@@ -1,5 +1,5 @@
 import sqlvalidator
-from cypher.CypherQuery import convert
+from Converter import convert_type
 
 if __name__ == '__main__':
 
@@ -56,16 +56,26 @@ if __name__ == '__main__':
 
     query8 = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>10;"
 
-    query9 = "SELECT supp.SupplierName " \
-            "FROM Suppliers AS supp " \
-            "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
-
     query10 = "SELECT product_name, unit_price FROM products, (SELECT avg(unit_price) AS test FROM products) AS avr WHERE unit_price < avr.test"
+
+    query13 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) AS aver FROM products " \
+           "WHERE product_name IN (SELECT product_name AS pname FROM products WHERE product_name LIKE 'T%'));"
 
     query11 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
            "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
 
-    query = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
+    query12 = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
+
+    query9 = "SELECT supp.SupplierName " \
+            "FROM Suppliers AS supp " \
+            "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
+
+    query14 = "SELECT s.company_name " \
+            "FROM suppliers AS s " \
+            "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
+
+    query = "SELECT PersNr, (SELECT SWS FROM Vorlesungen WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) FROM Professoren;"
+
 
     # sql_query = sqlvalidator.parse(query)
 
@@ -78,6 +88,6 @@ if __name__ == '__main__':
 
     print("--------------------------------")
 
-    print(convert(query))
+    print(convert_type("Cypher", query))
 
     print("--------------------------------")

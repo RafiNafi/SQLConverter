@@ -15,7 +15,7 @@ previous_name = ""
 
 
 # wrapper to set initial variables
-def convert(query_parts):
+def init_convert(query_parts):
     global counter
     counter = 0
     return convert_query(query_parts, False, False)
@@ -336,7 +336,6 @@ class CypherQuery:
         return prefix
 
     def create_subquery(self, text):
-        global counter
 
         sub_clause = str(text)[1:-1]
         if sub_clause.split(" ")[0] == "SELECT":
