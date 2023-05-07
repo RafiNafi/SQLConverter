@@ -240,11 +240,11 @@ def test_subquery_one_statement():
 def test_subquery_where_nested_statements():
 
     query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
-           "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
+           "WHERE product_name NOT IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
 
 
     assert convert_type("Cypher", query) == "CALL{CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub0} WITH * " \
-                                    "MATCH (p:products) WHERE product_name IN sub0 RETURN avg(unit_price) AS sub1} WITH * " \
+                                    "MATCH (p:products) WHERE NOT product_name IN [sub0] RETURN avg(unit_price) AS sub1} WITH * " \
                                     "MATCH (p:products) WHERE unit_price > sub1 RETURN product_name, unit_price;"
 
 def test_subquery_where_multiple_statement():
@@ -254,7 +254,7 @@ def test_subquery_where_multiple_statement():
 
     assert convert_type("Cypher", query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub0} WITH * " \
                                    "CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub1} WITH * " \
-                                   "MATCH (p:products) WHERE unit_price > sub0 AND product_name IN sub1 RETURN product_name, unit_price;"
+                                   "MATCH (p:products) WHERE unit_price > sub0 AND product_name IN [sub1] RETURN product_name, unit_price;"
 
 def test_subquery_select():
 

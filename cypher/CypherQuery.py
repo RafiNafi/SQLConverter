@@ -498,12 +498,17 @@ class CypherQuery:
 
                         print(str(token))
                         # for LIKE and IN keywords
-                        for word in token:
+                        for idx, word in enumerate(token):
 
                             if type(word) == sqlparse.sql.Parenthesis:
                                 if self.create_subquery(word):
-                                    command_string += self.get_correct_subquery_alias()
+                                    if str(token[idx - 2]) == "IN" or str(token[idx - 2]) == "NOT IN":
+                                        command_string += "[" + self.get_correct_subquery_alias() + "]"
+                                    else:
+                                        command_string += self.get_correct_subquery_alias()
                                     counter += 1
+
+
 
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")
