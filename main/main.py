@@ -74,17 +74,20 @@ if __name__ == '__main__':
             "FROM suppliers AS s " \
             "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
 
-    query = "SELECT PersNr, (SELECT SWS FROM Vorlesungen WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) FROM Professoren;"
+    query15 = "SELECT PersNr, " \
+              "(SELECT SWS FROM Vorlesungen WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) " \
+              "FROM Professoren;"
 
+    query = "SELECT product_name,product_id " \
+            "FROM products " \
+            "WHERE product_id>ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
+            "ORDER BY product_name;"
 
     # sql_query = sqlvalidator.parse(query)
 
     # check if query valid
     # if not sql_query.is_valid():
         # print("ERROR: " + str(sql_query.errors))
-    # else:
-
-    # print("query is fine!")
 
     print("--------------------------------")
 

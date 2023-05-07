@@ -407,8 +407,6 @@ class CypherQuery:
             dir2 = "-"
 
         rel = Relationship("relationship", "", node2, node1, dir1, dir2)
-        # add relationship to node
-        node1.add_relationship(rel)
         # add relationship to match query part
         match_query.add_relationship(rel)
         return

@@ -2,7 +2,7 @@ class Statement:
     def __init__(self, keyword, text, array):
         self.keyword = keyword
         self.text = text
-        self.array_orig = array  # contains parsed query parts
+        self.array_orig = array  # contains parsed query parts (only for already existing parts in query)
 
 
 class Property:
@@ -16,13 +16,9 @@ class Node:
         self.name = name
         self.label = label
         self.properties = []
-        self.relationships = []
 
     def add_property(self, prop):
         self.properties.append(prop)
-
-    def add_relationship(self, rel):
-        self.relationships.append(rel)
 
     def get_formatted_node_string(self):
         formatted_string = "(" + self.name + ":" + self.label
@@ -32,7 +28,7 @@ class Node:
             for idx, prop in enumerate(self.properties):
                 formatted_string += str(prop.name) + ": " + str(prop.value)
 
-                if idx != len(self.properties)-1:
+                if idx != len(self.properties) - 1:
                     formatted_string += ", "
 
             formatted_string += "}"
@@ -40,6 +36,7 @@ class Node:
         formatted_string += ")"
 
         return formatted_string
+
 
 class Relationship:
     def __init__(self, name, label, node_l, node_r, arrow_dir_l, arrow_dir_r):
@@ -84,7 +81,7 @@ class MatchPart:
             if elem == node_l:
                 return index
 
-    def generate_query_string(self,text):
+    def generate_query_string(self, text):
 
         query = text
 
@@ -141,4 +138,3 @@ class MatchPart:
 
 class OptionalMatchPart(MatchPart):
     pass
-
