@@ -80,8 +80,8 @@ if __name__ == '__main__':
 
     query = "SELECT product_name,product_id " \
             "FROM products " \
-            "WHERE product_id>ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
-            "ORDER BY product_name;"
+            "WHERE product_name = 'test' AND product_id < ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
+            "ORDER BY product_id;"
 
     # sql_query = sqlvalidator.parse(query)
 
