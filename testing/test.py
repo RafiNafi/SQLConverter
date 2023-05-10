@@ -287,3 +287,27 @@ def test_mixed_select_subquery_and_exists_subquery():
 
     assert convert_type("Cypher", query) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN SWS AS Lehrbelastung}" \
                               " WITH * MATCH (p:Professoren) RETURN PersNr, Lehrbelastung;"
+
+def test_simple_all_subquery():
+
+    query = "SELECT product_name,product_id " \
+            "FROM products " \
+            "WHERE product_id < ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
+            "ORDER BY product_id;"
+
+    assert convert_type("Cypher", query) == "CALL{MATCH (s:suppliers) WHERE company_name STARTS WITH \"S\" " \
+                                            "RETURN supplier_id AS sub0} WITH collect(sub0) AS coll_list " \
+                                            "MATCH (p:products) WHERE ALL(var IN coll_list WHERE product_id < var) " \
+                                            "RETURN product_name, product_id ORDER BY product_id;"
+
+def test_simple_any_subquery():
+
+    query = "SELECT product_name,product_id " \
+            "FROM products " \
+            "WHERE product_name = 'test' AND product_id < ANY(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
+            "ORDER BY product_id;"
+
+    assert convert_type("Cypher", query) == "CALL{MATCH (s:suppliers) WHERE company_name STARTS WITH \"S\" " \
+                                            "RETURN supplier_id AS sub0} WITH collect(sub0) AS coll_list " \
+                                            "MATCH (p:products) WHERE product_name = 'test' AND ANY(var IN coll_list WHERE product_id < var) " \
+                                            "RETURN product_name, product_id ORDER BY product_id;"
