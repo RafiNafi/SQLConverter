@@ -1,8 +1,6 @@
-import sqlvalidator
 from Converter import convert_type
 
 if __name__ == '__main__':
-
     # test queries
 
     query1 = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -59,35 +57,31 @@ if __name__ == '__main__':
     query10 = "SELECT product_name, unit_price FROM products, (SELECT avg(unit_price) AS test FROM products) AS avr WHERE unit_price < avr.test"
 
     query13 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) AS aver FROM products " \
-           "WHERE product_name IN (SELECT product_name AS pname FROM products WHERE product_name LIKE 'T%'));"
+              "WHERE product_name IN (SELECT product_name AS pname FROM products WHERE product_name LIKE 'T%'));"
 
     query11 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
-           "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
+              "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
 
     query12 = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
 
     query9 = "SELECT supp.SupplierName " \
-            "FROM Suppliers AS supp " \
-            "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
+             "FROM Suppliers AS supp " \
+             "WHERE EXISTS(SELECT ProductName FROM Products WHERE Products.SupplierID = supp.supplierID);"
 
     query14 = "SELECT s.company_name " \
-            "FROM suppliers AS s " \
-            "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
+              "FROM suppliers AS s " \
+              "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
 
     query15 = "SELECT PersNr, " \
               "(SELECT SWS FROM Vorlesungen WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) " \
               "FROM Professoren;"
 
-    query = "SELECT product_name,product_id " \
-            "FROM products " \
-            "WHERE product_name = 'test' AND product_id < ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
-            "ORDER BY product_id;"
+    query16 = "SELECT p.product_name " \
+              "FROM products AS p " \
+              "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    # sql_query = sqlvalidator.parse(query)
-
-    # check if query valid
-    # if not sql_query.is_valid():
-        # print("ERROR: " + str(sql_query.errors))
+    query = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+            "AND unit_price > (SELECT avg(unit_price) FROM products);"
 
     print("--------------------------------")
 

@@ -16,14 +16,16 @@ def test_simple_select_wildcard():
     assert convert_type("Cypher", query) == "MATCH (p:products) " \
                                             "RETURN p;"
 
+
 def test_simple_where():
     query = "SELECT supp.SupplierName " \
             "FROM Suppliers AS supp " \
             "WHERE supp.SupplierName = 'Adidas';"
 
-    assert convert_type("Cypher", query) ==  "MATCH (supp:Suppliers) " \
+    assert convert_type("Cypher", query) == "MATCH (supp:Suppliers) " \
                                             "WHERE supp.SupplierName = 'Adidas' " \
                                             "RETURN supp.SupplierName;"
+
 
 def test_check_simple_join():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -31,7 +33,8 @@ def test_check_simple_join():
             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID);"
 
     assert convert_type("Cypher", query) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
-                                   "RETURN e.EmployeeID, count(*) AS Count;"
+                                            "RETURN e.EmployeeID, count(*) AS Count;"
+
 
 def test_check_simple_join_without_parenthesis():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -39,7 +42,8 @@ def test_check_simple_join_without_parenthesis():
             "JOIN ord AS o ON o.EmployeeID = e.EmployeeID;"
 
     assert convert_type("Cypher", query) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
-                                   "RETURN e.EmployeeID, count(*) AS Count;"
+                                            "RETURN e.EmployeeID, count(*) AS Count;"
+
 
 def test_mult_joins():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -52,25 +56,27 @@ def test_mult_joins():
             "LIMIT 10;"
 
     assert convert_type("Cypher", query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
-                                   "WHERE e.EmployeeID = 100 " \
-                                   "RETURN e.EmployeeID, count(*) AS Count " \
-                                   "ORDER BY Count DESC " \
-                                   "LIMIT 10;" \
-
+                                            "WHERE e.EmployeeID = 100 " \
+                                            "RETURN e.EmployeeID, count(*) AS Count " \
+                                            "ORDER BY Count DESC " \
+                                            "LIMIT 10;"
 
 def test_mult_joins_mixed_alias():
     query = "SELECT EmployeeID, count(*) " \
-            "FROM Employee " \
-            "JOIN ord ON (ord.EmployeeID = Employee.EmployeeID) " \
-            "JOIN products AS p ON (p.ProductID = ord.ProductID) " \
-            "WHERE EmployeeID = 100 " \
-            "GROUP BY EmployeeID " \
-            "ORDER BY count(*) DESC;"
+                "FROM Employee " \
+                "JOIN ord ON (ord.EmployeeID = Employee.EmployeeID) " \
+                "JOIN products AS p ON (p.ProductID = ord.ProductID) " \
+                "WHERE EmployeeID = 100 " \
+                "GROUP BY EmployeeID " \
+                "ORDER BY count(*) DESC;"
 
-    assert convert_type("Cypher", query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
-                                   "WHERE EmployeeID = 100 " \
-                                   "RETURN EmployeeID, count(*) " \
-                                   "ORDER BY count(*) DESC;"
+    assert convert_type("Cypher",
+                            query) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+                                      "WHERE EmployeeID = 100 " \
+                                      "RETURN EmployeeID, count(*) " \
+                                      "ORDER BY count(*) DESC;"
+
+
 def test_where_not_in_and_not_between():
     query = "SELECT p.ProductName, p.UnitPrice " \
             "FROM products AS p " \
@@ -78,8 +84,8 @@ def test_where_not_in_and_not_between():
             "AND p.Price NOT BETWEEN 10 AND 20;"
 
     assert convert_type("Cypher", query) == "MATCH (p:products) " \
-                                   "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price =< 20 " \
-                                   "RETURN p.ProductName, p.UnitPrice;"
+                                            "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price =< 20 " \
+                                            "RETURN p.ProductName, p.UnitPrice;"
 
 
 def test_where_like():
@@ -88,8 +94,8 @@ def test_where_like():
             "WHERE p.ProductName LIKE 'C%ool';"
 
     assert convert_type("Cypher", query) == "MATCH (p:products) " \
-                                   "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
-                                   "RETURN p.ProductName, p.UnitPrice;"
+                                            "WHERE p.ProductName STARTS WITH \"C\" AND p.ProductName ENDS WITH \"ool\" " \
+                                            "RETURN p.ProductName, p.UnitPrice;"
 
 
 def test_outer_join():
@@ -100,9 +106,9 @@ def test_outer_join():
             "WHERE e.EmployeeID = 100;"
 
     assert convert_type("Cypher", query) == "MATCH (e:Employee) " \
-                                   "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
-                                   "WHERE e.EmployeeID = 100 " \
-                                   "RETURN e.EmployeeID, count(*) AS Count;"
+                                            "OPTIONAL MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+                                            "WHERE e.EmployeeID = 100 " \
+                                            "RETURN e.EmployeeID, count(*) AS Count;"
 
 
 def test_union_query():
@@ -119,16 +125,16 @@ def test_union_query():
             "WHERE p.ProductName = 'Test';"
 
     assert convert_type("Cypher", query) == "MATCH (e:Employee) " \
-                                   "WHERE e.EmployeeID = 100 " \
-                                   "RETURN DISTINCT e.EmployeeID, count(*) AS Count " \
-                                   "UNION ALL " \
-                                   "MATCH (p:products) " \
-                                   "WHERE NOT p.ProductName IN ['Chocolade','Chai'] " \
-                                   "RETURN p.ProductName, p.UnitPrice " \
-                                   "UNION " \
-                                   "MATCH (p:products) " \
-                                   "WHERE p.ProductName = 'Test' " \
-                                   "RETURN *;"
+                                            "WHERE e.EmployeeID = 100 " \
+                                            "RETURN DISTINCT e.EmployeeID, count(*) AS Count " \
+                                            "UNION ALL " \
+                                            "MATCH (p:products) " \
+                                            "WHERE NOT p.ProductName IN ['Chocolade','Chai'] " \
+                                            "RETURN p.ProductName, p.UnitPrice " \
+                                            "UNION " \
+                                            "MATCH (p:products) " \
+                                            "WHERE p.ProductName = 'Test' " \
+                                            "RETURN *;"
 
 
 def test_between():
@@ -138,8 +144,8 @@ def test_between():
             "AND p.ProductName IN ('Chocolade');"
 
     assert convert_type("Cypher", query) == "MATCH (p:products) " \
-                                   "WHERE 1 <= p.Price =< 15 AND p.ProductName IN ['Chocolade'] " \
-                                   "RETURN p.ProductName, p.UnitPrice;"
+                                            "WHERE 1 <= p.Price =< 15 AND p.ProductName IN ['Chocolade'] " \
+                                            "RETURN p.ProductName, p.UnitPrice;"
 
 
 def test_where_not():
@@ -147,16 +153,17 @@ def test_where_not():
             "WHERE NOT Country='Germany' AND NOT Country='USA';"
 
     assert convert_type("Cypher", query) == "MATCH (c:Customers) " \
-                                   "WHERE NOT Country='Germany' AND NOT Country='USA' " \
-                                   "RETURN *;"
+                                            "WHERE NOT Country='Germany' AND NOT Country='USA' " \
+                                            "RETURN *;"
 
 
 def test_insert():
     query = "INSERT INTO Customers (CustomerName, ContactName, Address, City, PostalCode, Country) " \
             "VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');"
 
-    assert convert_type("Cypher", query) == "CREATE (:Customers {CustomerName: 'Cardinal', ContactName: 'Tom B. Erichsen', " \
-                                   "Address: 'Skagen 21', City: 'Stavanger', PostalCode: '4006', Country: 'Norway'});"
+    assert convert_type("Cypher",
+                        query) == "CREATE (:Customers {CustomerName: 'Cardinal', ContactName: 'Tom B. Erichsen', " \
+                                  "Address: 'Skagen 21', City: 'Stavanger', PostalCode: '4006', Country: 'Norway'});"
 
 
 def test_insert_without_columns():
@@ -164,60 +171,69 @@ def test_insert_without_columns():
             "VALUES ('Cardinal', 'Tom B. Erichsen', 'Skagen 21', 'Stavanger', '4006', 'Norway');"
 
     assert convert_type("Cypher", query) == "CREATE (:Customers {var0: 'Cardinal', var1: 'Tom B. Erichsen', " \
-                                   "var2: 'Skagen 21', var3: 'Stavanger', var4: '4006', var5: 'Norway'});"
+                                            "var2: 'Skagen 21', var3: 'Stavanger', var4: '4006', var5: 'Norway'});"
+
 
 def test_delete_node():
     query = "DELETE FROM Customers WHERE CustomerName='Alfred';"
 
     assert convert_type("Cypher", query) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' DELETE c;"
 
+
 def test_delete_with_alias():
     query = "DELETE FROM Customers AS cust WHERE cust.CustomerName='Alfred';"
 
     assert convert_type("Cypher", query) == "MATCH (cust:Customers) WHERE cust.CustomerName='Alfred' DELETE cust;"
+
+
 def test_delete_with_many_conditions():
     query = "DELETE FROM Customers WHERE CustomerName='Alfred' AND City NOT IN ('Stuttgart') AND Service LIKE '%ool' AND CustomerID BETWEEN 1 and 100;"
 
-    assert convert_type("Cypher", query) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' AND NOT c.City IN ['Stuttgart'] AND c.Service ENDS WITH \"ool\" AND 1 <= c.CustomerID =< 100 DELETE c;"
+    assert convert_type("Cypher",
+                        query) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' AND NOT c.City IN ['Stuttgart'] AND c.Service ENDS WITH \"ool\" AND 1 <= c.CustomerID =< 100 DELETE c;"
+
 
 def test_update_node():
-
     query = "UPDATE Customers " \
             "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
             "WHERE CustomerID = 1;"
 
-    assert convert_type("Cypher", query) == "MATCH (c:Customers) WHERE c.CustomerID = 1 SET c.ContactName = 'Alfred Schmidt', c.City= 'Frankfurt';"
+    assert convert_type("Cypher",
+                        query) == "MATCH (c:Customers) WHERE c.CustomerID = 1 SET c.ContactName = 'Alfred Schmidt', c.City= 'Frankfurt';"
+
 
 def test_update_with_alias():
-
     query = "UPDATE Customers AS cust " \
             "SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt' " \
             "WHERE cust.CustomerID = 1;"
 
-    assert convert_type("Cypher", query) == "MATCH (cust:Customers) WHERE cust.CustomerID = 1 SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt';"
+    assert convert_type("Cypher",
+                        query) == "MATCH (cust:Customers) WHERE cust.CustomerID = 1 SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt';"
+
 
 def test_simple_having():
-
     query = "SELECT p.zipcode AS zip, count(*) AS population " \
-             "FROM Person as p " \
-             "WHERE p.EmployeeID = 100 " \
-             "GROUP BY zip " \
-             "HAVING population>10000;"
+            "FROM Person as p " \
+            "WHERE p.EmployeeID = 100 " \
+            "GROUP BY zip " \
+            "HAVING population>10000;"
 
-    assert convert_type("Cypher", query) == "MATCH (p:Person) WITH p.zipcode AS zip, count(*) AS population WHERE p.EmployeeID = 100 AND population>10000 RETURN zip, population;"
+    assert convert_type("Cypher",
+                        query) == "MATCH (p:Person) WITH p.zipcode AS zip, count(*) AS population WHERE p.EmployeeID = 100 AND population>10000 RETURN zip, population;"
+
 
 def test_having_multiple_aggregations():
-
     query = "SELECT COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c " \
             "FROM Customers AS Cust " \
             "GROUP BY c " \
             "HAVING count > 5 AND sum < 10 " \
             "ORDER BY count DESC;"
 
-    assert convert_type("Cypher", query) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c WHERE count > 5 AND sum < 10 RETURN count, sum, c ORDER BY count DESC;"
+    assert convert_type("Cypher",
+                        query) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c WHERE count > 5 AND sum < 10 RETURN count, sum, c ORDER BY count DESC;"
+
 
 def test_switch_case():
-
     query = "SELECT od.OrderID, od.Quantity, " \
             "CASE " \
             "WHEN od.Quantity > 30 THEN 'greater 30' " \
@@ -226,70 +242,74 @@ def test_switch_case():
             "END AS QuantityText " \
             "FROM OrderDetails AS od;"
 
-    assert convert_type("Cypher", query) == "MATCH (od:OrderDetails) RETURN od.OrderID, od.Quantity, CASE WHEN od.Quantity > 30 THEN 'greater 30' WHEN od.Quantity = 30 THEN 'is 30' ELSE 'under 30' END AS QuantityText;"
+    assert convert_type("Cypher",
+                        query) == "MATCH (od:OrderDetails) RETURN od.OrderID, od.Quantity, CASE WHEN od.Quantity > 30 THEN 'greater 30' WHEN od.Quantity = 30 THEN 'is 30' ELSE 'under 30' END AS QuantityText;"
+
 
 def test_subquery_one_statement():
-
     query = "SELECT p.product_name, p.unit_price " \
-              "FROM products AS p " \
-              "WHERE p.unit_price > (SELECT avg(b.unit_price) FROM products AS b);"
+            "FROM products AS p " \
+            "WHERE p.unit_price > (SELECT avg(b.unit_price) FROM products AS b);"
 
     assert convert_type("Cypher", query) == "CALL{MATCH (b:products) RETURN avg(b.unit_price) AS sub0} WITH * " \
-                                   "MATCH (p:products) WHERE p.unit_price > sub0 RETURN p.product_name, p.unit_price;"
+                                            "MATCH (p:products) WHERE p.unit_price > sub0 RETURN p.product_name, p.unit_price;"
+
 
 def test_subquery_where_nested_statements():
-
     query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
-           "WHERE product_name NOT IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
+            "WHERE product_name NOT IN (SELECT product_name FROM products WHERE product_name LIKE 'T%'));"
 
+    assert convert_type("Cypher",
+                        query) == "CALL{CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub0} WITH * " \
+                                  "MATCH (p:products) WHERE NOT product_name IN [sub0] RETURN avg(unit_price) AS sub1} WITH * " \
+                                  "MATCH (p:products) WHERE unit_price > sub1 RETURN product_name, unit_price;"
 
-    assert convert_type("Cypher", query) == "CALL{CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub0} WITH * " \
-                                    "MATCH (p:products) WHERE NOT product_name IN [sub0] RETURN avg(unit_price) AS sub1} WITH * " \
-                                    "MATCH (p:products) WHERE unit_price > sub1 RETURN product_name, unit_price;"
 
 def test_subquery_where_multiple_statement():
-
     query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products) " \
             "AND product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%');"
 
     assert convert_type("Cypher", query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub0} WITH * " \
-                                   "CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub1} WITH * " \
-                                   "MATCH (p:products) WHERE unit_price > sub0 AND product_name IN [sub1] RETURN product_name, unit_price;"
+                                            "CALL{MATCH (p:products) WHERE product_name STARTS WITH \"T\" RETURN product_name AS sub1} WITH * " \
+                                            "MATCH (p:products) WHERE unit_price > sub0 AND product_name IN [sub1] RETURN product_name, unit_price;"
+
 
 def test_subquery_select():
-
     query = "SELECT name, (SELECT sum(SWS) AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr), PersNr FROM Professoren;"
 
-    assert convert_type("Cypher", query) == "CALL{MATCH (v:Vorlesungen) WHERE gelesenVon=PersNr RETURN sum(SWS) AS Lehrbelastung} WITH * " \
-                             "MATCH (p:Professoren) RETURN name, Lehrbelastung, PersNr;"
+    assert convert_type("Cypher",
+                        query) == "CALL{MATCH (v:Vorlesungen) WHERE gelesenVon=PersNr RETURN sum(SWS) AS Lehrbelastung} WITH * " \
+                                  "MATCH (p:Professoren) RETURN name, Lehrbelastung, PersNr;"
+
 
 def test_subquery_having():
-
     query = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>(SELECT avg(unit_price) FROM products);"
 
     assert convert_type("Cypher", query) == "CALL{MATCH (p:products) RETURN avg(unit_price) AS sub0} WITH * " \
-                             "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS numb WHERE numb>sub0 RETURN name, numb;"
+                                            "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS numb WHERE numb>sub0 RETURN name, numb;"
+
 
 def test_subquery_exists():
-
     query = "SELECT s.company_name " \
             "FROM suppliers AS s " \
             "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
 
-    assert convert_type("Cypher", query) == "MATCH (s:suppliers) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN s.company_name;"
+    assert convert_type("Cypher",
+                        query) == "MATCH (s:suppliers) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN s.company_name;"
+
 
 def test_mixed_select_subquery_and_exists_subquery():
-
     query = "SELECT PersNr, " \
             "(SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE " \
             "EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) " \
             "FROM Professoren;"
 
-    assert convert_type("Cypher", query) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN SWS AS Lehrbelastung}" \
-                              " WITH * MATCH (p:Professoren) RETURN PersNr, Lehrbelastung;"
+    assert convert_type("Cypher",
+                        query) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN SWS AS Lehrbelastung}" \
+                                  " WITH * MATCH (p:Professoren) RETURN PersNr, Lehrbelastung;"
+
 
 def test_simple_all_subquery():
-
     query = "SELECT product_name,product_id " \
             "FROM products " \
             "WHERE product_id < ALL(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
@@ -300,8 +320,8 @@ def test_simple_all_subquery():
                                             "MATCH (p:products) WHERE ALL(var IN coll_list WHERE product_id < var) " \
                                             "RETURN product_name, product_id ORDER BY product_id;"
 
-def test_simple_any_subquery():
 
+def test_simple_any_subquery():
     query = "SELECT product_name,product_id " \
             "FROM products " \
             "WHERE product_name = 'test' AND product_id < ANY(SELECT supplier_id FROM suppliers WHERE company_name LIKE 'S%') " \
@@ -311,3 +331,8 @@ def test_simple_any_subquery():
                                             "RETURN supplier_id AS sub0} WITH collect(sub0) AS coll_list " \
                                             "MATCH (p:products) WHERE product_name = 'test' AND ANY(var IN coll_list WHERE product_id < var) " \
                                             "RETURN product_name, product_id ORDER BY product_id;"
+
+def test_simple_missing_error():
+    query = " "
+
+    assert convert_type("Cypher", query) == ""

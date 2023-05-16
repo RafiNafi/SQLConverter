@@ -28,6 +28,9 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
     # check for number of whitespaces
 
     # parse and print string
+    if not len(sqlparse.parse(query_parts)) > 0:
+        return ""
+
     parsed = sqlparse.parse(query_parts)[0]
     print(parsed.tokens)
 
@@ -62,7 +65,10 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
         combined_result_query += result
 
     # add semicolon and delete unnecessary whitespace
-    combined_result_query = delete_obsolete_whitespaces_and_semicolons(combined_result_query) + ";"
+    combined_result_query = delete_obsolete_whitespaces_and_semicolons(combined_result_query)
+
+    if len(combined_result_query) > 0:
+        combined_result_query += ";"
 
     return combined_result_query
 
@@ -175,6 +181,7 @@ class CypherQuery:
                 if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
                     if elem.keyword == key:
                         combined_query_string += elem.text
+                        # self.queryParts.remove(elem)
 
                 else:
                     if type(elem) == MatchPart and key in ["FROM", "UPDATE"]:
@@ -225,7 +232,8 @@ class CypherQuery:
             if key in keywords_essential or type(i) == sqlparse.sql.Where:
                 self.sql_query_parts.append([])
             if key != ";":
-                self.sql_query_parts[len(self.sql_query_parts) - 1].append(i)
+                if len(self.sql_query_parts) - 1 >= 0:
+                    self.sql_query_parts[len(self.sql_query_parts) - 1].append(i)
 
         # transform query parts
         for i in range(len(self.sql_query_parts)):
@@ -341,7 +349,6 @@ class CypherQuery:
         sub_clause = str(text)[1:-1]
         if sub_clause.split(" ")[0] == "SELECT":
             # recursion
-
             result = convert_query(sub_clause, True, False)
 
             if collected:
@@ -500,7 +507,7 @@ class CypherQuery:
                         # print("CHECK: "+ check)
                         if check.split(" ")[0] == "SELECT":
                             comp_part = str(token).partition("(")[0]
-                            if comp_part[-3:] in ["ANY", "ALL"]:
+                            if comp_part[-3:].upper() in ["ANY", "ALL"]:
                                 command_string = prefix
                             else:
                                 command_string = prefix + str(token).partition("(")[0]
@@ -522,7 +529,7 @@ class CypherQuery:
                             if type(word) == sqlparse.sql.Function:
                                 print(word)
                                 keyword = str(word)[0:3]
-                                if str(word)[0:3] in ["ANY", "ALL"]:
+                                if str(word).upper()[0:3] in ["ANY", "ALL"]:
                                     if self.create_subquery(str(word)[3:], True):
                                         if comp_part is not None:
                                             temp_array = comp_part.split(" ")
