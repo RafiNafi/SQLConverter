@@ -1,4 +1,4 @@
-import cypher.CypherQuery as Cypher
+from cypher import CypherQuery as Cypher
 
 
 def convert_type(conversion_type, query):
