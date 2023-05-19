@@ -80,8 +80,12 @@ if __name__ == '__main__':
               "FROM products AS p " \
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    query = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+    query18 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
             "AND unit_price > (SELECT avg(unit_price) FROM products);"
+
+    query = "SELECT s.SupplierName " \
+            "FROM Suppliers AS s " \
+            "WHERE s.SupplierName = 'Adidas';"
 
     print("--------------------------------")
 

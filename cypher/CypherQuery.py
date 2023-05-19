@@ -11,13 +11,20 @@ keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
 counter = 0
+form = ""
 previous_name = ""
 
 
 # wrapper to set initial variables
-def init_convert(query_parts):
-    global counter
+def init_convert(query_parts, formatted):
+    global counter, form
     counter = 0
+
+    if formatted == 1:
+        form = "\n"
+    else:
+        form = ""
+
     return convert_query(query_parts, False, False)
 
 
@@ -25,12 +32,11 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
     queries_list = []
 
     print("START CONVERTING NEW QUERY")
-    # check for number of whitespaces
 
-    # parse and print string
     if not len(sqlparse.parse(query_parts)) > 0:
         return ""
 
+    # parse and print string
     parsed = sqlparse.parse(query_parts)[0]
     print(parsed.tokens)
 
@@ -170,6 +176,14 @@ class CypherQuery:
             self.remove_query_part_by_name("SELECT")
         return
 
+    def check_for_linebreak(self, combined_query_string, text, addition):
+
+        if combined_query_string[-1] == "\n" and text[0] == " ":
+            return combined_query_string + text[1:] + addition
+        else:
+            return combined_query_string + text + addition
+
+
     def combine_query(self):
 
         self.add_subquery_name()
@@ -180,18 +194,34 @@ class CypherQuery:
             for elem in self.queryParts:
                 if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
                     if elem.keyword == key:
-                        combined_query_string += elem.text
+                        if elem.keyword != "SELECT":
+                            if len(combined_query_string) > 0:
+                                combined_query_string = self.check_for_linebreak(combined_query_string, elem.text, form)
+                            else:
+                                combined_query_string += elem.text + form
+                        else:
+                            combined_query_string = self.check_for_linebreak(combined_query_string, elem.text, "")
                         # self.queryParts.remove(elem)
 
                 else:
                     if type(elem) == MatchPart and key in ["FROM", "UPDATE"]:
-                        combined_query_string += elem.generate_query_string("MATCH ")
+                        if len(combined_query_string) > 0:
+                            combined_query_string = self.check_for_linebreak(combined_query_string,
+                                                                         elem.generate_query_string("MATCH "), form)
+                        else:
+                            combined_query_string += elem.generate_query_string("MATCH ") + form
+
                         self.queryParts.remove(elem)
 
                     elif type(elem) == OptionalMatchPart:
                         if key in ["LEFT OUTER JOIN", "RIGHT OUTER JOIN",
                                    "FULL OUTER JOIN", "FULL JOIN"]:
-                            combined_query_string += elem.generate_query_string("OPTIONAL MATCH ")
+                            if len(combined_query_string) > 0:
+                                combined_query_string = self.check_for_linebreak(combined_query_string,
+                                                                             elem.generate_query_string("OPTIONAL MATCH "), form)
+                            else:
+                                combined_query_string += elem.generate_query_string("OPTIONAL MATCH ") + form
+
                             self.queryParts.remove(elem)
 
         return combined_query_string
@@ -352,10 +382,10 @@ class CypherQuery:
             result = convert_query(sub_clause, True, False)
 
             if collected:
-                sub_result_string = "CALL{" + result + "} WITH " \
-                  "collect(" + self.get_correct_subquery_alias() + ") AS coll_list "
+                sub_result_string = "CALL{" + form + "" + result + "} WITH " \
+                                                       "collect(" + self.get_correct_subquery_alias() + ") AS coll_list "
             else:
-                sub_result_string = "CALL{" + result + "} WITH * "
+                sub_result_string = "CALL{" + form + "" + result + "} WITH * "
 
             sub_statement = Statement("SUBQUERY", sub_result_string, [])
             self.queryParts.append(sub_statement)
@@ -533,7 +563,9 @@ class CypherQuery:
                                     if self.create_subquery(str(word)[3:], True):
                                         if comp_part is not None:
                                             temp_array = comp_part.split(" ")
-                                            command_string += self.create_any_all_list_string(keyword,"coll_list", temp_array[1], temp_array[0])
+                                            command_string += self.create_any_all_list_string(keyword, "coll_list",
+                                                                                              temp_array[1],
+                                                                                              temp_array[0])
 
                             # for LIKE and IN keywords
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":

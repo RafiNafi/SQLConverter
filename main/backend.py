@@ -9,15 +9,15 @@ cors = CORS(app)
 
 parser = reqparse.RequestParser()
 parser.add_argument('query')
+parser.add_argument('language')
 
 
 class Converter(Resource):
 
     def post(self):
-        # print("get query")
         args = parser.parse_args()
         print(args)
-        return convert_type("Cypher", args.query)
+        return convert_type(args.language, args.query)
 
 
 api.add_resource(Converter, '/convert')
