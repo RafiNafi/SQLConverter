@@ -59,7 +59,7 @@ if __name__ == '__main__':
     query13 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) AS aver FROM products " \
               "WHERE product_name IN (SELECT product_name AS pname FROM products WHERE product_name LIKE 'T%'));"
 
-    query11 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
+    query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
               "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
 
     query12 = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
@@ -80,10 +80,10 @@ if __name__ == '__main__':
               "FROM products AS p " \
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    query18 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
-            "AND unit_price > (SELECT avg(unit_price) FROM products);"
+    query11 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+            "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
 
-    query = "SELECT s.SupplierName " \
+    query18 = "SELECT s.SupplierName " \
             "FROM Suppliers AS s " \
             "WHERE s.SupplierName = 'Adidas';"
 
