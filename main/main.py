@@ -1,4 +1,5 @@
 from Converter import convert_type
+import sqlfluff
 
 if __name__ == '__main__':
     # test queries
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     query13 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) AS aver FROM products " \
               "WHERE product_name IN (SELECT product_name AS pname FROM products WHERE product_name LIKE 'T%'));"
 
-    query = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
+    query18 = "SELECT product_name, unit_price FROM products WHERE unit_price > (SELECT avg(unit_price) FROM products " \
               "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%')) AND unit_price < (SELECT sum(unit_price) FROM products);"
 
     query12 = "SELECT PersNr, (SELECT SWS AS Lehrbelastung FROM Vorlesungen WHERE gelesenVon=PersNr ORDER BY PersNr) FROM Professoren;"
@@ -83,12 +84,19 @@ if __name__ == '__main__':
     query11 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
             "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
 
-    query18 = "SELECT s.SupplierName " \
+    query = "SELECT s.suppliername " \
             "FROM Suppliers AS s " \
-            "WHERE s.SupplierName = 'Adidas';"
+            "WHERE s.suppliername = 'Adidas' " \
+            "AND s.suppliername LIKE 'a%';"
 
     print("--------------------------------")
 
-    print(convert_type("Cypher", query))
+    query_sting = convert_type("Cypher", query)
+
+    print("\nQUERY:")
+    print(query_sting)
+
+    for line in sqlfluff.lint(query):
+        print(line)
 
     print("--------------------------------")
