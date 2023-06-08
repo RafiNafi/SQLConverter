@@ -18,14 +18,19 @@ class Converter(Resource):
     def post(self):
         args = parser.parse_args()
         print(args)
+        heavy_errors = False
 
         errors = sqlfluff.lint(args.query)
-        if len(errors) > 1:
+        if len(errors) > 0:
             for line in errors:
                 print(line)
-            return errors
+                if line['code'] == "PRS":
+                    heavy_errors = True
 
-        return convert_type(args.language, args.query)
+        if heavy_errors:
+            return ["", errors]
+
+        return [convert_type(args.language, args.query), errors]
 
 
 api.add_resource(Converter, '/convert')

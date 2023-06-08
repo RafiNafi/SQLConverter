@@ -81,10 +81,10 @@ if __name__ == '__main__':
               "FROM products AS p " \
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    query11 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
-            "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
+    query = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+            "AND unit_price > (SELECT avg(unit_price FROM products)) ORDER BY unit_price;"
 
-    query = "SELECT s.suppliername " \
+    query11 = "SELECT s.suppliername " \
             "FROM Suppliers AS s " \
             "WHERE s.suppliername = 'Adidas' " \
             "AND s.suppliername LIKE 'a%';"
