@@ -192,6 +192,16 @@ class CypherQuery:
         else:
             return text + addition
 
+    def add_subquery_indent(self, combined_query_string, query_text):
+
+        if len(combined_query_string) > 0:
+            combined_query_string += "\t" * subquery_depth + self.check_for_linebreak(
+                combined_query_string, query_text, form)
+        else:
+            combined_query_string += "\t" * subquery_depth + query_text + form
+
+        return combined_query_string
+
     def combine_query(self):
 
         self.add_subquery_name()
@@ -203,35 +213,20 @@ class CypherQuery:
             for elem in self.queryParts:
                 if type(elem) != MatchPart and type(elem) != OptionalMatchPart:
                     if elem.keyword == key:
-                        if len(combined_query_string) > 0:
-                            combined_query_string += "\t" * subquery_depth + self.check_for_linebreak(
-                                combined_query_string, elem.text, form)
-                        else:
-                            combined_query_string += "\t" * subquery_depth + elem.text + form
+                        combined_query_string = self.add_subquery_indent(combined_query_string, elem.text)
                         # self.queryParts.remove(elem)
 
                 else:
                     if type(elem) == MatchPart and key in ["FROM", "UPDATE"]:
-                        if len(combined_query_string) > 0:
-                            combined_query_string += "\t" * subquery_depth + self.check_for_linebreak(
-                                combined_query_string,
-                                elem.generate_query_string("MATCH "), form)
-                        else:
-                            combined_query_string += "\t" * subquery_depth + elem.generate_query_string("MATCH ") + form
-
+                        combined_query_string = self.add_subquery_indent(combined_query_string,
+                                                                         elem.generate_query_string("MATCH "))
                         self.queryParts.remove(elem)
 
                     elif type(elem) == OptionalMatchPart:
                         if key in ["LEFT OUTER JOIN", "RIGHT OUTER JOIN",
                                    "FULL OUTER JOIN", "FULL JOIN"]:
-                            if len(combined_query_string) > 0:
-                                combined_query_string += "\t" * subquery_depth + self.check_for_linebreak(
-                                    combined_query_string,
-                                    elem.generate_query_string("OPTIONAL MATCH "), form)
-                            else:
-                                combined_query_string += "\t" * subquery_depth + elem.generate_query_string(
-                                    "OPTIONAL MATCH ") + form
-
+                            combined_query_string = self.add_subquery_indent(combined_query_string,
+                                                                             elem.generate_query_string("OPTIONAL MATCH "))
                             self.queryParts.remove(elem)
 
         if formatted:
