@@ -18,12 +18,12 @@ formatted = False
 
 
 # wrapper to set initial variables
-def init_convert(query_parts, format):
+def init_convert(query_parts, formats):
     global counter, form, subquery_depth, formatted
     counter = 0
     subquery_depth = 0
 
-    if format == 1:
+    if formats == 1:
         form = "\n"
         formatted = True
     else:
@@ -464,8 +464,8 @@ class CypherQuery:
         match_query.add_relationship(rel)
         return
 
-    def create_any_all_list_string(self, type, list_name, operator, param):
-        return "" + type + "(var IN " + list_name + " WHERE " + param + " " + operator + " var)"
+    def create_any_all_list_string(self, typ, list_name, operator, param):
+        return "" + typ + "(var IN " + list_name + " WHERE " + param + " " + operator + " var)"
 
     def transform_query_part(self, text, array):
         global counter
@@ -485,8 +485,6 @@ class CypherQuery:
         match text:
             case "SELECT":
                 statement = Statement("SELECT", " RETURN ", array)
-
-                temp = str(counter)
 
                 for pos, t in enumerate(array):
                     if str(t) == "DISTINCT":
@@ -558,12 +556,12 @@ class CypherQuery:
                             command_string = prefix + str(token)
 
                         print(str(token))
-                        for idx, word in enumerate(token):
+                        for index, word in enumerate(token):
 
                             # for sub queries
                             if type(word) == sqlparse.sql.Parenthesis:
                                 if self.create_subquery(word, False):
-                                    if str(token[idx - 2]) == "IN" or str(token[idx - 2]) == "NOT IN":
+                                    if str(token[index - 2]) == "IN" or str(token[index - 2]) == "NOT IN":
                                         command_string += "[" + self.get_correct_subquery_alias() + "]"
                                     else:
                                         command_string += self.get_correct_subquery_alias()
