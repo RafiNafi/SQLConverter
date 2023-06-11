@@ -65,7 +65,7 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
 
             queries_list.append(string_query)
 
-    print(queries_list)
+    print("QUERIES LIST: "+str(queries_list))
 
     print("--------------------------------")
     # combine all queries
@@ -199,7 +199,6 @@ class CypherQuery:
                 combined_query_string, query_text, form)
         else:
             combined_query_string += "\t" * subquery_depth + query_text + form
-
         return combined_query_string
 
     def combine_query(self):
@@ -229,7 +228,7 @@ class CypherQuery:
                                                                              elem.generate_query_string("OPTIONAL MATCH "))
                             self.queryParts.remove(elem)
 
-        if formatted:
+        if formatted and subquery_depth > 0:
             subquery_depth -= 1
 
         return combined_query_string
@@ -384,11 +383,11 @@ class CypherQuery:
 
     def create_subquery(self, text, collected):
 
+        global subquery_depth
         sub_clause = str(text)[1:-1]
         if sub_clause.split(" ")[0] == "SELECT":
 
             if formatted:
-                global subquery_depth
                 subquery_depth += 1
 
             # recursion

@@ -81,13 +81,19 @@ if __name__ == '__main__':
               "FROM products AS p " \
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    query = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
-            "AND unit_price > (SELECT avg(unit_price FROM products)) ORDER BY unit_price;"
+    query22 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+            "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
 
     query11 = "SELECT s.suppliername " \
             "FROM Suppliers AS s " \
             "WHERE s.suppliername = 'Adidas' " \
             "AND s.suppliername LIKE 'a%';"
+
+    query = "SELECT product_name, unit_price FROM products " \
+            "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price < (SELECT avg(unit_price) FROM products) " \
+            "UNION ALL " \
+            "SELECT product_name, unit_price FROM products " \
+            "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price > (SELECT sum(unit_price) FROM products) ORDER BY unit_price;"
 
     print("--------------------------------")
 
@@ -96,6 +102,7 @@ if __name__ == '__main__':
     print("\nQUERY:")
     print(query_sting)
 
+    print("\n")
     for line in sqlfluff.lint(query):
         print(line)
 
