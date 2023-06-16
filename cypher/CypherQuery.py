@@ -171,14 +171,14 @@ class CypherQuery:
             statement_r = self.get_query_part_by_name("SELECT")
 
             # works at the moment only for one variable in select
-            if "AS" not in statement_r.text.split(" ") and "as" not in statement_r.text.split(" "):
+            if "AS" not in [x.upper() for x in statement_r.text.split(" ")]:
                 statement_r.text += " AS sub" + str(counter)
 
             parsed = sqlparse.parse(statement_r.text)[0]
             for token in parsed.tokens:
                 if type(token) == sqlparse.sql.Identifier:
                     temp_arr = str(token).split(" ")
-                    if "AS" in temp_arr or "as" in temp_arr:
+                    if "AS" in [x.upper() for x in temp_arr]:
                         global previous_name
                         previous_name = temp_arr[-1]
         elif self.is_exists_subquery:
@@ -348,14 +348,14 @@ class CypherQuery:
             if type(t) == sqlparse.sql.IdentifierList:
                 for obj in enumerate(t.get_identifiers()):
                     # print(obj[1])
-                    if "AS" in str(obj[1]).split(" ") or "as" in str(obj[1]).split(" "):
+                    if "AS" in [x.upper() for x in str(obj[1]).split(" ")]:
                         as_parts = str(obj[1]).split(" ")
                         statement.add_node(Node(as_parts[0], as_parts[2]))
                     else:
                         statement.add_node(Node(str(obj[1]), str(obj[1])[0].lower()))
 
             elif type(t) == sqlparse.sql.Identifier:
-                if "AS" in str(t).split(" ") or "as" in str(t).split(" "):
+                if "AS" in [x.upper() for x in str(t).split(" ")]:
                     as_parts = str(t).split(" ")
                     statement.add_node(Node(as_parts[0], as_parts[2]))
                     # if this from is part of a delete statement
@@ -651,7 +651,7 @@ class CypherQuery:
                 for token in array:
                     if type(token) == sqlparse.sql.Identifier:
                         # print(token)
-                        if "AS" in str(token).split(" ") or "as" in str(token).split(" "):
+                        if "AS" in [x.upper() for x in str(token).split(" ")]:
                             as_parts = str(token).split(" ")
                             joined_node = Node(as_parts[0], as_parts[2])
                             match_query.add_node(joined_node)
