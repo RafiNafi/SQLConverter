@@ -8,6 +8,12 @@ def test_simple_select():
     assert convert_type("Cypher", query, 0) == "MATCH (p:products) " \
                                             "RETURN *, p.name;"
 
+def test_simple_orderby():
+    query = "SELECT tb.var FROM tabelle AS tb ORDER BY tb.var ASC;"
+
+    assert convert_type("Cypher", query, 0) == "MATCH (tb:tabelle) " \
+                                               "RETURN tb.var " \
+                                               "ORDER BY tb.var ASC;"
 
 def test_simple_select_wildcard():
     query = "SELECT p.* " \

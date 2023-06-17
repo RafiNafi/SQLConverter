@@ -615,7 +615,7 @@ class CypherQuery:
                                     # recursion
                                     result = convert_query(sub_clause, True, True)
 
-                                    statement.text += "EXISTS{" + result + "}"
+                                    statement.text += "\t" * subquery_depth + "EXISTS{" + form + result + "}"
 
                     # other words
                     else:

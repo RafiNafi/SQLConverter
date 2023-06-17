@@ -24,7 +24,7 @@ class Converter(Resource):
         if len(errors) > 0:
             for line in errors:
                 print(line)
-                if line['code'] == "PRS":
+                if line['code'] in ["PRS", "RF01"]:
                     heavy_errors = True
 
         if heavy_errors:
