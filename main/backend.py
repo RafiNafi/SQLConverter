@@ -12,6 +12,8 @@ parser = reqparse.RequestParser()
 parser.add_argument('query')
 parser.add_argument('language')
 
+serious_error_codes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07", "LT06", "RF02", "RF03", "RF05", "ST07"]
+ignore_error_codes = ["AL07", "AM01", "AM02", "LT05", "LT07", "LT09", "LT12"]
 
 class Converter(Resource):
 
@@ -20,11 +22,11 @@ class Converter(Resource):
         print(args)
         heavy_errors = False
 
-        errors = sqlfluff.lint(args.query)
+        errors = sqlfluff.lint(args.query, "ansi", None, ignore_error_codes)
         if len(errors) > 0:
             for line in errors:
                 print(line)
-                if line['code'] in ["PRS", "RF01"]:
+                if line['code'] in serious_error_codes:
                     heavy_errors = True
 
         if heavy_errors:

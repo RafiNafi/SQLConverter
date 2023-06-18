@@ -486,13 +486,14 @@ class CypherQuery:
                 statement = Statement("SELECT", " RETURN ", array)
 
                 for pos, t in enumerate(array):
-                    if str(t) == "DISTINCT":
+                    if str(t).upper() == "DISTINCT":
                         statement.text = statement.text + "DISTINCT "
 
                     if type(t) == sqlparse.sql.IdentifierList:
                         for index, obj in enumerate(t.get_identifiers()):
                             # print(obj)
                             item = str(obj)
+
                             # check for wildcards in identifiers
                             if type(obj) == sqlparse.sql.Identifier and obj.is_wildcard() and len(str(obj)) > 1:
                                 item = str(obj).split(".")[0]
@@ -500,7 +501,9 @@ class CypherQuery:
                                 statement.text = statement.text + item
                             else:
                                 statement.text = statement.text + item + ", "
-                    elif type(t) == sqlparse.sql.Identifier or type(t) == sqlparse.sql.Function or str(t) == "*":
+
+                    elif type(t) == sqlparse.sql.Identifier or type(t) == sqlparse.sql.Function \
+                            or str(t) == "*" or type(t) == sqlparse.sql.Case:
 
                         if len(str(t)) > 1 and "*" in str(t):
                             statement.text = statement.text + str(t).split(".")[0]
