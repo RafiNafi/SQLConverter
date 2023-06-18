@@ -362,10 +362,10 @@ class CypherQuery:
                     if opt_delete_statement is not None:
                         opt_delete_statement.text += as_parts[2]
                 else:
-                    statement.add_node(Node(str(t), str(t)[0].lower()))
+                    statement.add_node(Node(str(t), str(t)))
                     # if this from is part of a delete statement
                     if opt_delete_statement is not None:
-                        opt_delete_statement.text += str(t)[0].lower()
+                        opt_delete_statement.text += str(t)
 
         self.queryParts.append(statement)
         return statement
