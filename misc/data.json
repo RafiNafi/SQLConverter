@@ -1,0 +1,64 @@
+{
+  "functions": [
+    {
+      "name": "AVG", "max_param_count": "1"
+    },
+    {
+      "name": "SUM", "max_param_count": "1"
+    },
+    {
+      "name": "MIN", "max_param_count": "1"
+    },
+    {
+      "name": "MAX", "max_param_count": "1"
+    },
+    {
+      "name": "COUNT", "max_param_count": "1"
+    },
+    {
+      "name": "CAST", "max_param_count": "1"
+    },
+    {
+      "name": "COALESCE", "max_param_count": "*"
+    },
+    {
+      "name": "CONCAT", "max_param_count": "*"
+    },
+    {
+      "name": "UPPER", "max_param_count": "1"
+    },
+    {
+      "name": "LOWER", "max_param_count": "1"
+    },
+    {
+      "name": "LENGTH", "max_param_count": "1"
+    },
+    {
+      "name": "SUBSTRING", "max_param_count": "3"
+    },
+    {
+      "name": "ABS", "max_param_count": "1"
+    },
+    {
+      "name": "CEIL", "max_param_count": "1"
+    },
+    {
+      "name": "FLOOR", "max_param_count": "1"
+    },
+    {
+      "name": "ROUND", "max_param_count": "1"
+    },
+    {
+      "name": "SQRT", "max_param_count": "1"
+    },
+    {
+      "name": "ANY", "max_param_count": "*"
+    },
+    {
+      "name": "ALL", "max_param_count": "*"
+    },
+    {
+      "name": "EXISTS", "max_param_count": "*"
+    }
+  ]
+}
