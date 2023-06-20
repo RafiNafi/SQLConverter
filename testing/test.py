@@ -10,6 +10,24 @@ def test_simple_select():
     assert convert_type("Cypher", query, 0) == "MATCH (p:products) " \
                                             "RETURN *, p.name;"
 
+def test_implicit_aliasing_from():
+
+    query = "SELECT tab.col, tab2.var FROM tabelle tab, tabelle2 tab2, tabelle3 as tab3, tabelle4;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (tab:tabelle),(tab2:tabelle2),(tab3:tabelle3),(tabelle4:tabelle4) " \
+                                               "RETURN tab.col, tab2.var;"
+
+def test_implicit_aliasing_select():
+
+    query = "SELECT tab.val wert, tab.val2 AS variable FROM tabelle AS tab;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (tab:tabelle) " \
+                                               "RETURN tab.val AS wert, tab.val2 AS variable;"
+
 def test_simple_orderby():
     query = "SELECT tb.var FROM tabelle AS tb ORDER BY tb.var ASC;"
 
@@ -424,3 +442,9 @@ def test_simple_missing_error():
     query = " "
 
     assert convert_type("Cypher", query, 0) == ""
+
+
+def test_simple_function_spelling_error():
+    query = "SELECT suum(p.price) FROM products p;"
+
+    assert not validator.Validator().query_syntax_validation(query)

@@ -1,5 +1,6 @@
 from Converter import convert_type
 import sqlfluff
+import validation.validator as validator
 
 if __name__ == '__main__':
     # test queries
@@ -82,20 +83,25 @@ if __name__ == '__main__':
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
     query22 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
-            "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
+              "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
 
     query11 = "SELECT s.suppliername " \
-            "FROM Suppliers AS s " \
-            "WHERE s.suppliername = 'Adidas' " \
-            "AND s.suppliername LIKE 'a%';"
+              "FROM Suppliers AS s " \
+              "WHERE s.suppliername = 'Adidas' " \
+              "AND s.suppliername LIKE 'a%';"
 
-    query = "SELECT product_name, unit_price FROM products " \
+    query55 = "SELECT product_name, unit_price FROM products " \
             "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price < (SELECT avg(unit_price) FROM products) " \
             "UNION ALL " \
             "SELECT product_name, unit_price FROM products " \
             "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price > (SELECT sum(unit_price) FROM products) ORDER BY unit_price;"
 
+    query = "SELECT tab.val wert, tab.val2 AS variable FROM tabelle AS tab;"
+
     print("--------------------------------")
+
+    checker = validator.Validator()
+    print("VALID: " + str(checker.query_syntax_validation(query)))
 
     query_sting = convert_type("Cypher", query)
 
