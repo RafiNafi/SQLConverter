@@ -69,6 +69,15 @@ def test_check_simple_join():
     assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
+def test_check_simple_implicit_join():
+    query = "SELECT emp.EmployeeID " \
+            "FROM Employee AS emp " \
+            "INNER JOIN ord o ON (o.EmployeeID = emp.EmployeeID);"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (emp:Employee)-[:relationship]->(o:ord) " \
+                                               "RETURN emp.EmployeeID;"
 
 def test_check_simple_join_without_parenthesis():
     query = "SELECT e.EmployeeID, count(*) AS Count " \
@@ -111,7 +120,7 @@ def test_mult_joins_mixed_alias():
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher",
-                            query, 0) == "MATCH (Employee:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+                            query, 0) == "MATCH (Employee:Employee)-[:relationship]->(ord:ord)-[:relationship]->(p:products) " \
                                       "WHERE EmployeeID = 100 " \
                                       "RETURN EmployeeID, count(*) " \
                                       "ORDER BY count(*) DESC;"

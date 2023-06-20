@@ -665,13 +665,16 @@ class CypherQuery:
 
                 for token in array:
                     if type(token) == sqlparse.sql.Identifier:
-                        # print(token)
+                        as_parts = str(token).split(" ")
+
                         if "AS" in [x.upper() for x in str(token).split(" ")]:
-                            as_parts = str(token).split(" ")
                             joined_node = Node(as_parts[0], as_parts[2])
                             match_query.add_node(joined_node)
+                        elif len(str(token).split(" ")) == 2:
+                            joined_node = Node(as_parts[0], as_parts[1])
+                            match_query.add_node(joined_node)
                         else:
-                            joined_node = Node(str(token), str(token)[0].lower())
+                            joined_node = Node(str(token), str(token))
                             match_query.add_node(joined_node)
 
                 for idx, token in enumerate(array):
