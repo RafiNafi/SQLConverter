@@ -59,6 +59,15 @@
     },
     {
       "name": "EXISTS", "max_param_count": "*"
+    },
+    {
+      "name": "MOD", "max_param_count": "2"
+    },
+    {
+      "name": "IFNULL", "max_param_count": "2"
+    },
+    {
+      "name": "NULLIF", "max_param_count": "2"
     }
   ]
 }

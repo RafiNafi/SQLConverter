@@ -351,8 +351,11 @@ class CypherQuery:
                     if "AS" in [x.upper() for x in str(obj[1]).split(" ")]:
                         as_parts = str(obj[1]).split(" ")
                         statement.add_node(Node(as_parts[0], as_parts[2]))
+                    elif len(str(obj[1]).split(" ")) == 2:
+                        as_parts = str(obj[1]).split(" ")
+                        statement.add_node(Node(as_parts[0], as_parts[1]))
                     else:
-                        statement.add_node(Node(str(obj[1]), str(obj[1])[0].lower()))
+                        statement.add_node(Node(str(obj[1]), str(obj[1])))
 
             elif type(t) == sqlparse.sql.Identifier:
                 if "AS" in [x.upper() for x in str(t).split(" ")]:
@@ -361,6 +364,9 @@ class CypherQuery:
                     # if this from is part of a delete statement
                     if opt_delete_statement is not None:
                         opt_delete_statement.text += as_parts[2]
+                elif len(str(t).split(" ")) == 2:
+                    as_parts = str(t).split(" ")
+                    statement.add_node(Node(as_parts[0], as_parts[1]))
                 else:
                     statement.add_node(Node(str(t), str(t)))
                     # if this from is part of a delete statement
@@ -491,12 +497,15 @@ class CypherQuery:
 
                     if type(t) == sqlparse.sql.IdentifierList:
                         for index, obj in enumerate(t.get_identifiers()):
-                            # print(obj)
+
                             item = str(obj)
 
                             # check for wildcards in identifiers
                             if type(obj) == sqlparse.sql.Identifier and obj.is_wildcard() and len(str(obj)) > 1:
                                 item = str(obj).split(".")[0]
+                            elif len(str(obj).split(" ")) == 2:
+                                item = str(obj).split(" ")[0] + " AS " + str(obj).split(" ")[1]
+
                             if index == len(list(t.get_identifiers())) - 1:
                                 statement.text = statement.text + item
                             else:
@@ -507,8 +516,11 @@ class CypherQuery:
 
                         if len(str(t)) > 1 and "*" in str(t):
                             statement.text = statement.text + str(t).split(".")[0]
+                        elif len(str(t).split(" ")) == 2:
+                            statement.text = statement.text + str(t).split(" ")[0] + " AS " + str(t).split(" ")[1]
                         else:
                             statement.text = statement.text + str(t)
+
                     elif type(t) == sqlparse.sql.Parenthesis:
                         if self.create_subquery(t, False):
                             statement.text += self.check_for_identifier_positions(array, pos,
