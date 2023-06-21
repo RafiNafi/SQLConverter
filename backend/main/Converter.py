@@ -1,4 +1,4 @@
-from cypher import CypherQuery as Cypher
+from backend.cypher import CypherQuery as Cypher
 
 
 def convert_type(conversion_type, query, formatted=1):

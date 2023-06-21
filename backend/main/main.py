@@ -1,9 +1,9 @@
-from Converter import convert_type
 import sqlfluff
-import validation.validator as validator
+import backend.validation.Validator as validator
+import Converter
 
 if __name__ == '__main__':
-    # test queries
+    # some test queries
 
     query1 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e, test " \
@@ -96,14 +96,14 @@ if __name__ == '__main__':
             "SELECT product_name, unit_price FROM products " \
             "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price > (SELECT sum(unit_price) FROM products) ORDER BY unit_price;"
 
-    query = "SELECT tab.val wert, tab.val2 AS variable FROM tabelle AS tab;"
+    query = "SELECT cast, column AS c, col FROM table;"
 
     print("--------------------------------")
 
     checker = validator.Validator()
     print("VALID: " + str(checker.query_syntax_validation(query)))
 
-    query_sting = convert_type("Cypher", query)
+    query_sting = Converter.convert_type("Cypher", query)
 
     print("\nQUERY:")
     print(query_sting)

@@ -1,9 +1,9 @@
 from flask import Flask
 from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
-from main.Converter import convert_type
+from backend.main.Converter import convert_type
 import sqlfluff
-import validation.validator as val
+import backend.validation.Validator as val
 
 app = Flask(__name__)
 api = Api(app)

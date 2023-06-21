@@ -1,12 +1,13 @@
 import sqlparse
 import json
+import backend
 
 class Validator:
 
     def __init__(self):
         self.function_flag = False
-
-        f = open('./misc/data.json')
+        self.misuse_keyword_flag = False
+        f = open(backend.DATA_DIR)
         self.functions = json.load(f)['functions']
         self.is_insert_statement = False
 
@@ -44,17 +45,17 @@ class Validator:
 
     def init_validation(self):
         self.function_flag = False
+        self.misuse_keyword_flag = False
         self.is_insert_statement = False
         return
 
     def check_flags(self):
-        if self.function_flag:
+        if self.function_flag or self.misuse_keyword_flag:
             return False
         else:
             return True
 
     def function_check(self, query_part):
-        #print("FUNKTION: " + str(query_part))
 
         for obj in self.functions:
             if str(query_part[0]).upper() == obj['name']:
@@ -62,3 +63,10 @@ class Validator:
 
         self.function_flag = True
         return
+
+    def keyword_check(self, query_part):
+
+
+        #self.misuse_keyword_flag = True
+        return
+

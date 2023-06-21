@@ -1,5 +1,5 @@
-from main.Converter import convert_type
-import validation.validator as validator
+from backend.main.Converter import convert_type
+import backend.validation.Validator as validator
 
 def test_simple_select():
     query = "SELECT *, p.name " \
