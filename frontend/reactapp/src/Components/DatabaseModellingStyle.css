@@ -1,0 +1,520 @@
+body {
+  position: absolute;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Root element of the website*/
+.canvasStyle {
+  position: absolute;
+  background: #222222;
+  width: 100%;
+  height: calc(100% - 60px);
+  overflow: hidden;
+}
+
+/* Toolbox left side */
+.leftSidebarContainer {
+  position: absolute;
+  width: 300px;
+  height: 100%;
+  min-height: 100%;
+  background: #3c3f41;
+  text-align: center;
+}
+
+.leftSidebarMainTitle {
+  margin-top: 20px;
+  font-size: 30px;
+  font-family: 'Ultra', sans-serif;
+  height: 5%;
+  color: white;
+  text-shadow: 0 2px #808088, 0 3px #2d2c2c;
+}
+
+.leftSidebarTitle {
+  margin-top: 20px;
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.spacer {
+  visibility: hidden;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.spacerBig {
+  visibility: hidden;
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+.spacerSmall {
+  visibility: hidden;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.sidebarDivider {
+  border-top: 2px solid whitesmoke;
+  border-radius: 15px;
+  box-shadow: #222222;
+  margin: 10px 30px 30px;
+}
+
+.leftSidebarSelectionContainer {
+  display: block;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 6px 6px 6px 10px;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+.leftSideBarElementContainer {
+  position: relative;
+  cursor: grab;
+  display: inline-block;
+  padding: 1px;
+  overflow: hidden;
+}
+
+.leftSideBarElement {
+  cursor: grab;
+  position: relative;
+  display: inline-block;
+  background-size: contain;
+  padding: 1px;
+  margin: 3px;
+  overflow: hidden;
+  width: 100px;
+  height: auto;
+  border: 2px solid #222222;
+  border-radius: 20px;
+  background-color: #323232;
+}
+
+.leftSideBarElementImage {
+  margin: auto;
+  position: relative;
+  cursor: grab;
+  display: inline-block;
+  width: 70%;
+  padding: 10px;
+  height: auto;
+
+}
+
+.leftSideBarElement:hover{
+  background-color: #2b2b2b;
+}
+
+/* The main outer drawBoard container */
+.outerDrawBoardContainerEr {
+  position: absolute !important;
+  display: block;
+  left: 300px;
+  height: 100%;
+  width: calc(100% - 300px);
+  text-align: left;
+  background-color: #222222;
+}
+
+/* Scrollbar*/
+.scrollAble {
+  overflow-y: scroll;
+  overflow-x: scroll;
+  scroll-behavior: smooth;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+/* background */
+::-webkit-scrollbar-track {
+  color: transparent;
+}
+
+/* the clickable scroll thing */
+::-webkit-scrollbar-thumb {
+  background: #656565;
+  border-radius: 6px;
+}
+
+/* hover event on the clickable scroll thing */
+::-webkit-scrollbar-thumb:hover {
+  background: #d0d0d0;
+}
+
+::-webkit-scrollbar-corner {
+  color: transparent;
+}
+
+
+/* height applied: height = 810 * amount of pages from top to bot    */
+/* width  applied: width  = 576 * amount of pages from left to right */
+.drawBoardBackgroundPage {
+  position: absolute !important;
+  height: 3000px;
+  width: 4000px;
+  border: #222222 30px solid;
+  border-bottom: #222222 900px solid;
+  border-right: #222222 640px solid;
+  background-color: white;
+
+  background-image:
+
+          /* the pages from top to bot */
+          repeating-linear-gradient(to bottom, transparent 0px, transparent 810px, rgba(54, 54, 54, 0.75) 810px, rgba(54, 54, 54, 0.75) 814px),
+
+          /* the pages from left to right */
+          repeating-linear-gradient(to right, transparent 0px, transparent 576px, rgba(54, 54, 54, 0.75) 576px, rgba(54, 54, 54, 0.75) 580px),
+
+          /* grid from top to bottom,    from transparent 0px to transparent 99px,  from 99px to 100px "#ccc = white line" */
+          repeating-linear-gradient(to bottom, transparent 1px, transparent 30px, #e5e5e5 30px, #e5e5e5 32px),
+          /* grid from left to right,     from transparent 0px to transparent 99px,  from 99px to 100px "#ccc = white line" */
+          repeating-linear-gradient(to right, transparent 0px, transparent 30px, #e5e5e5 30px, #e5e5e5 32px);
+
+}
+
+
+/* The area, where elements can be dragged inside */
+.drawBoardDragArea {
+  position: absolute !important;
+  height: 100%; /* 5000px --> scroll */
+  width: 100%;   /* 5000px --> scroll */
+  overflow: scroll;
+}
+
+
+
+/* Right edit bar */
+
+.rightSidebarContainer {
+  overflow: auto;
+  position: relative;
+  width: 300px;
+  float: right;
+  height: 100%;
+  background: #3c3f41;
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  color: white;
+
+}
+
+.rightSidebarTitle{
+
+}
+
+.rightBarButton {
+  background-color: #555555;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  margin: 10px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+.rightBarButton:hover {
+  background-color: #2b2b2b;
+}
+
+.rightBarInput {
+  background-color: #3c3f41;
+  border: none;
+  outline: none;
+  border-bottom: 2px solid #c8c8c8;
+  margin-left: 10%;
+  margin-right: 10%;
+  width: 80%;
+  height: 30px;
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  color:white;
+  margin-bottom: 30px;
+}
+
+.rightBarInputFieldLabel{
+  margin-left: 10%;
+  float: left;
+  margin-bottom: 10px;
+}
+
+.rightBarCurrentName{
+  margin-top: 10px;
+  margin-bottom: 40px;
+}
+
+input[type="file"] {
+  display: none;
+}
+.uploadButton{
+  float:right;
+  text-align: unset;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  padding: 10px 10px 5px 10px;
+  border-radius: 10px;
+}
+.uploadButton:hover{
+  background-color: #222222;
+}
+.downloadButton{
+  float:right;
+  text-align: unset;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  padding: 10px 10px 5px 10px;
+  border-radius: 10px;
+}
+.downloadButton:hover{
+  background-color: #222222;
+}
+
+.privacyPolicy{
+  float:right;
+  text-align: unset;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  margin: 0 40px 0 0;
+  padding: 10px 10px 5px 10px;
+  border-radius: 10px;
+}
+
+.privacyPolicy:hover{
+  background-color: #222222;
+}
+
+.Head{
+  height: 55px;
+  min-height: 55px;
+  width: 100%;
+  min-width: 100%;
+  background-color: #3c3f41;
+  border-bottom: 5px solid #222222;
+}
+
+.rightBarCardinality{
+  background-color: #3c3f41;
+  border: none;
+  outline: none;
+  border-bottom: 2px solid #c8c8c8;
+  width: 40px;
+  min-width: 40px;
+  height: 30px;
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  color:white;
+  margin: 20px 5% 50px 5%;  /* top, right, bot, left */
+}
+
+.TabsButton{
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  height: 100%;
+  color: white;
+  min-height: 100%;
+  width: 200px;
+  float: left;
+  margin-left: 10px;
+  border-top: 2px solid #222222;
+  border-left: 2px solid #222222;
+  border-right: 2px solid #222222;
+  border-bottom: none;
+  background-color: #222222;
+  cursor: pointer;
+}
+
+.TabsButtonActive{
+  background-color: #222222
+}
+
+.TabsButtonNotActive{
+  background-color: #323232;
+}
+
+.TabsButton:hover{
+  background-color: #3c3f41;
+}
+
+.TransformInvalidValidIcon {
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  right: 50%;
+  bottom: 20px;
+  padding: 10px 10px 10px 10px;
+  border-radius: 10px;
+}
+
+.TransformButton{
+  font-size: 20px;
+  font-family: 'Ultra', sans-serif;
+  color: black;
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  right: calc(50% - 100px);
+  bottom: 20px;
+  padding: 10px 10px 10px 10px;
+  border-radius: 10px;
+}
+
+
+.TransformButtonEnabled{
+
+}
+
+.TransformButtonEnabled:hover{
+  background-color: #3c3f41;
+  cursor: pointer;
+}
+
+.TransformButtonDisabled{
+ display: none;
+}
+
+.invalidMessage{
+  text-align: left;
+}
+
+
+
+.mergeCheckBoxSwitch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.mergeCheckBoxSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.mergeCheckBoxSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #9a9a9a;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.mergeCheckBoxSlider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #383838;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .mergeCheckBoxSlider {
+  background-color: #222222;
+}
+
+input:focus + .mergeCheckBoxSlider {
+  box-shadow: 0 0 1px #222222;
+}
+
+input:checked + .mergeCheckBoxSlider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.mergeCheckBoxSlider.mergeCheckBoxSliderContent {
+  border-radius: 34px;
+}
+
+.mergeCheckBoxSlider.mergeCheckBoxSliderContent:before {
+  border-radius: 50%;
+}
+
+
+.select {
+  appearance: none;
+
+  background-color: transparent;
+
+  border: 1px solid white;
+  border-radius: 20px;
+
+  width: 80%;
+  padding: 10px;
+  line-height: 1.1;
+
+  color: white;
+  font-family: inherit;
+  font-size: inherit;
+
+  cursor: pointer;
+}
+
+
+.select-items {
+  background-color: #383838;
+  color: white;
+}
+
+.erDescriptions {
+  text-align: left;
+}
+
+.outerDrawBoardContainerRelational {
+  position: absolute !important;
+  display: block;
+  height: 100%;
+  width: 100%;
+  text-align: left;
+  background-color: #222222;
+}
+
+.SqlPopUp {
+  margin: 10%;
+  background-color: #222222;
+  text-align: left;
+  height: 70%;
+  overflow: scroll;
+}
+
+.SqlContent {
+  margin: 10%;
+  background-color: #222222;
+  text-align: left;
+  color: #cccccc;
+}
+
+.SqlHighlightedWord {
+  color: #e5430a
+}
+
+
+textarea{
+  resize:none;
+}
+
