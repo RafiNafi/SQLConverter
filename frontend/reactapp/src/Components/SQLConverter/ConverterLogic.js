@@ -32,7 +32,7 @@ const ConverterLogic = () => {
     
     function generateNoSql(dto){
     
-        const seriousCodes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07","LT06", "RF02", "RF03", "RF05", "ST07"];
+        const seriousCodes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07","LT06", "RF02", "RF03", "RF05", "ST07", "AM07"];
 
         console.log("data send: "+ dto.query+" language: "+dto.language)
     
