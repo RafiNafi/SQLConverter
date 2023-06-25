@@ -15,13 +15,15 @@ subquery_depth = 0
 form = ""
 previous_name = ""
 formatted = False
+has_union = False
 
 
 # wrapper to set initial variables
 def init_convert(query_parts, formats):
-    global counter, form, subquery_depth, formatted
+    global counter, form, subquery_depth, formatted, has_union
     counter = 0
     subquery_depth = 0
+    has_union = False
 
     if formats == 1:
         form = "\n"
@@ -36,6 +38,8 @@ def init_convert(query_parts, formats):
 def convert_query(query_parts, is_subquery, is_exists_subquery):
     queries_list = []
 
+    global has_union
+
     print("START CONVERTING NEW QUERY")
 
     if not len(sqlparse.parse(query_parts)) > 0:
@@ -45,6 +49,7 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
     parsed = sqlparse.parse(query_parts)[0]
     print(parsed.tokens)
 
+    # check for union
     last_index = 0
     for idx, token in enumerate(parsed.tokens):
         if str(token) == "UNION ALL" or str(token) == "UNION":
@@ -56,6 +61,8 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
             queries_list.append(string_query)
             queries_list.append(str(token) + str(parsed.tokens[idx + 1]))
             last_index = idx + 2
+
+            has_union = True
 
         if len(parsed.tokens) == idx + 1:
 
@@ -506,6 +513,8 @@ class CypherQuery:
                                 item = str(obj).split(".")[0]
                             elif len(str(obj).split(" ")) == 2:
                                 item = str(obj).split(" ")[0] + " AS " + str(obj).split(" ")[1]
+                            elif has_union and len(str(obj).split(" ")) < 2:
+                                item = str(obj) + " AS " + str(obj).split(".")[1]
 
                             if index == len(list(t.get_identifiers())) - 1:
                                 statement.text = statement.text + item
@@ -520,7 +529,10 @@ class CypherQuery:
                         elif len(str(t).split(" ")) == 2:
                             statement.text = statement.text + str(t).split(" ")[0] + " AS " + str(t).split(" ")[1]
                         else:
-                            statement.text = statement.text + str(t)
+                            if has_union and len(str(t).split(" ")) < 2:
+                                statement.text = statement.text + str(t) + " AS " + str(t).split(".")[1]
+                            else:
+                                statement.text = statement.text + str(t)
 
                     elif type(t) == sqlparse.sql.Parenthesis:
                         if self.create_subquery(t, False):

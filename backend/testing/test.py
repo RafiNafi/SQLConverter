@@ -166,16 +166,23 @@ def test_outer_join():
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
 
+def test_union_without_alias():
+    query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (e:employees) RETURN e.city AS city UNION MATCH (s:suppliers) RETURN s.city AS city ORDER BY city;"
+
 def test_union_query():
-    query = "SELECT DISTINCT e.EmployeeID, count(*) AS Count " \
+    query = "SELECT DISTINCT e.ProductName AS name, e.UnitPrice " \
             "FROM Employee AS e " \
             "WHERE e.EmployeeID = 100 " \
             "UNION ALL " \
-            "SELECT p.ProductName, p.UnitPrice " \
+            "SELECT p.ProductName AS name, p.UnitPrice " \
             "FROM products AS p " \
             "WHERE p.ProductName NOT IN ('Chocolade','Chai') " \
             "UNION " \
-            "SELECT * " \
+            "SELECT p.ProductName AS name, p.UnitPrice " \
             "FROM products AS p " \
             "WHERE p.ProductName = 'Test';"
 
@@ -183,15 +190,15 @@ def test_union_query():
 
     assert convert_type("Cypher", query, 0) == "MATCH (e:Employee) " \
                                             "WHERE e.EmployeeID = 100 " \
-                                            "RETURN DISTINCT e.EmployeeID, count(*) AS Count " \
+                                            "RETURN DISTINCT e.ProductName AS name, e.UnitPrice AS UnitPrice " \
                                             "UNION ALL " \
                                             "MATCH (p:products) " \
                                             "WHERE NOT p.ProductName IN ['Chocolade','Chai'] " \
-                                            "RETURN p.ProductName, p.UnitPrice " \
+                                            "RETURN p.ProductName AS name, p.UnitPrice AS UnitPrice " \
                                             "UNION " \
                                             "MATCH (p:products) " \
                                             "WHERE p.ProductName = 'Test' " \
-                                            "RETURN *;"
+                                            "RETURN p.ProductName AS name, p.UnitPrice AS UnitPrice;"
 
 
 def test_between():
