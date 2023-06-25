@@ -287,16 +287,16 @@ def test_update_with_alias():
 
 
 def test_simple_having():
-    query = "SELECT p.zipcode AS zip, count(*) AS population " \
+    query = "SELECT p.zipcode AS zip, count(*) " \
             "FROM Person as p " \
             "WHERE p.EmployeeID = 100 " \
             "GROUP BY zip " \
-            "HAVING population>10000;"
+            "HAVING count(*) > 10000;"
 
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher",
-                        query, 0) == "MATCH (p:Person) WITH p.zipcode AS zip, count(*) AS population WHERE p.EmployeeID = 100 AND population>10000 RETURN zip, population;"
+                        query, 0) == "MATCH (p:Person) WITH p.zipcode AS zip, count(*) AS alias1 WHERE p.EmployeeID = 100 AND alias1 > 10000 RETURN zip, alias1;"
 
 
 def test_having_multiple_aggregations():
@@ -388,12 +388,12 @@ def test_subquery_select():
 
 
 def test_subquery_having():
-    query = "SELECT p.product_name AS name,COUNT(p.unit_price) AS numb FROM products AS p GROUP BY name HAVING numb>(SELECT avg(products.unit_price) FROM products);"
+    query = "SELECT p.product_name AS name,COUNT(p.unit_price) FROM products AS p GROUP BY name HAVING COUNT(p.unit_price) > (SELECT avg(products.unit_price) FROM products);"
 
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher", query, 0) == "CALL{MATCH (products:products) RETURN avg(products.unit_price) AS sub0} WITH * " \
-                                            "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS numb WHERE numb>sub0 RETURN name, numb;"
+                                            "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS alias1 WHERE alias1 > sub0 RETURN name, alias1;"
 
 
 def test_subquery_exists():

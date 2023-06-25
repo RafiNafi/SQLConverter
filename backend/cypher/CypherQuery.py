@@ -65,7 +65,7 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
 
             queries_list.append(string_query)
 
-    print("QUERIES LIST: "+str(queries_list))
+    print("QUERIES LIST: " + str(queries_list))
 
     print("--------------------------------")
     # combine all queries
@@ -225,7 +225,8 @@ class CypherQuery:
                         if key in ["LEFT OUTER JOIN", "RIGHT OUTER JOIN",
                                    "FULL OUTER JOIN", "FULL JOIN"]:
                             combined_query_string = self.add_subquery_indent(combined_query_string,
-                                                                             elem.generate_query_string("OPTIONAL MATCH "))
+                                                                             elem.generate_query_string(
+                                                                                 "OPTIONAL MATCH "))
                             self.queryParts.remove(elem)
 
         if formatted and subquery_depth > 0:
@@ -281,7 +282,7 @@ class CypherQuery:
     def put_array_together_into_string(self, array):
         combined_result = ""
         for single in array:
-            combined_result += single
+            combined_result += str(single)
         return combined_result
 
     def cutout_keyword_parts_from_array(self, keywords, array):
@@ -459,9 +460,9 @@ class CypherQuery:
         dir2 = "-"
         if joined_node == node1:
             dir1 = "-"
-            dir2 = "->"
+            dir2 = "->"  # ->
         elif joined_node == node2:
-            dir1 = "<-"
+            dir1 = "<-"  # <-
             dir2 = "-"
 
         rel = Relationship("relationship", "", node2, node1, dir1, dir2)
@@ -701,13 +702,39 @@ class CypherQuery:
             case "HAVING":
                 statement = Statement("HAVING", "WITH", array)
 
-                # create or update where statement
-                self.update_where_clause(array, 1, "AND")
-
                 # copy variables from return to with clause
                 statement_select = self.get_query_part_by_name("SELECT")
 
-                # print(statement_select.text)
+                updated_having_text = self.put_array_together_into_string(array)
+
+                parsed = sqlparse.parse(statement_select.text)[0]
+
+                number = 1
+                new_return_text = ""
+
+                # add alias for every return value without alias
+                for token in parsed.tokens:
+                    if type(token) == sqlparse.sql.IdentifierList:
+                        for idf in token:
+                            if type(idf) == sqlparse.sql.Identifier or type(idf) == sqlparse.sql.Function:
+                                if len(str(idf).split(" ")) < 2:
+                                    new_return_text += str(idf) + " AS alias" + str(number)
+                                    number += 1
+                                else:
+                                    new_return_text += str(idf)
+                            else:
+                                new_return_text += str(idf)
+                    elif type(token) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function:
+                        if len(str(token).split(" ")) < 2:
+                            new_return_text += str(token) + " AS alias" + str(number)
+                            number += 1
+                        else:
+                            new_return_text += str(token)
+                    else:
+                        new_return_text += str(token)
+
+                statement_select.text = new_return_text
+
                 statement.text += statement_select.text.split("RETURN")[1] + " "
 
                 parsed = sqlparse.parse(statement_select.text)[0]
@@ -717,16 +744,59 @@ class CypherQuery:
                 for token in parsed.tokens:
                     if type(token) == sqlparse.sql.IdentifierList:
                         for idf in token:
-                            if type(idf) == sqlparse.sql.Identifier:
-                                new_return_text += str(idf).split(" ")[2]
+                            if type(idf) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function:
+                                alias = str(idf).split(" ")[2]
+                                new_return_text += alias
+
+                                array_having = sqlparse.parse(updated_having_text)[0].tokens
+                                updated_having_text = ""
+
+                                for comp in array_having:
+                                    if type(comp) == sqlparse.sql.Comparison:
+                                        if str(comp[0]) == str(idf).split(" ")[0]:
+                                            updated_having_text += alias + self.put_array_together_into_string(comp[1:])
+                                        else:
+                                            updated_having_text += str(comp)
+                                    else:
+                                        updated_having_text += str(comp)
+
                             else:
                                 new_return_text += str(idf)
-                    elif type(token) == sqlparse.sql.Identifier:
+                    elif type(token) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function:
                         new_return_text += str(token).split(" ")[2]
                     else:
                         new_return_text += str(token)
 
+                temp_text = ""
+                for having_part in sqlparse.parse(updated_having_text)[0].tokens:
+                    flag = False
+                    if type(having_part) == sqlparse.sql.Comparison:
+                        comp = str(having_part).split(" ")[0]
+                        for text in sqlparse.parse(new_return_text)[0].tokens:
+                            if type(text) == sqlparse.sql.IdentifierList:
+                                for idf in text:
+                                    if type(idf) == sqlparse.sql.Identifier or type(text) == sqlparse.sql.Function:
+                                        if comp == str(idf):
+                                            flag = True
+
+                            elif type(text) == sqlparse.sql.Identifier or type(text) == sqlparse.sql.Function:
+                                if comp == str(text):
+                                    flag = True
+
+                        if not flag:
+                            temp_text += "alias"+str(number) + self.put_array_together_into_string(having_part[1:])
+                            statement.text += ", " + str(comp) + " AS " + " alias"+str(number)
+                            number += 1
+                        else:
+                            temp_text += str(having_part)
+                    else:
+                        temp_text += str(having_part)
+
+
                 statement_select.text = new_return_text
+
+                # create or update where statement
+                self.update_where_clause(sqlparse.parse(temp_text)[0].tokens, 1, "AND")
 
                 self.queryParts.append(statement)
                 return statement.text

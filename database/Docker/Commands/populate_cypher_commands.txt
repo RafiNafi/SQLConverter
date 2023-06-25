@@ -6,34 +6,34 @@ docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\###INSERT_PATH
 NODES:
 
 //Create Products
-LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MERGE (p:products {product_id: row.product_id}) 
+LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MERGE (p:products {product_id: toInteger(row.product_id)}) 
 ON CREATE SET p.product_name = row.product_name, p.unit_price = toFloat(row.unit_price), p.supplier_id = toInteger(row.supplier_id), p.category_id = toInteger(row.category_id),
 p.units_in_stock = toInteger(row.units_in_stock), p.units_on_order = toInteger(row.units_on_order), p.reorder_level = toInteger(row.reorder_level), p.discontinued = toInteger(row.discontinued);
 
 
 // Create categories
-LOAD CSV WITH HEADERS FROM 'file:///categories.csv' AS row MERGE (c:categories {category_id: row.category_id}) 
+LOAD CSV WITH HEADERS FROM 'file:///categories.csv' AS row MERGE (c:categories {category_id: toInteger(row.category_id)}) 
 ON CREATE SET c.category_name = row.category_name, c.description = row.description, c.picture = row.picture;
 
 
 //Create order_details
-LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row with row where row.id is not null MERGE (od:order_details {order_id: row.order_id, product_id: row.product_id}) 
+LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MERGE (od:order_details {order_id: toInteger(row.order_id), product_id: toInteger(row.product_id)}) 
 ON CREATE SET od.unit_price = toFloat(row.unit_price), od.quantity = toInteger(row.quantity), od.discount = toFloat(row.discount);
 
 // Create Orders
-LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MERGE (o:orders {order_id: row.order_id}) 
+LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MERGE (o:orders {order_id: toInteger(row.order_id)}) 
 ON CREATE SET o.ship_name = row.ship_name, o.customer_id = toInteger(row.customer_id), o.employee_id = toInteger(row.employee_id), o.order_date = row.order_date, o.required_date = row.required_date, 
 o.shipped_date = row.shipped_date, o.ship_via = toInteger(row.ship_via), o.freight = toFloat(row.freight), o.ship_address = row.ship_address, o.ship_city = row.ship_city, o.ship_region = row.ship_region, 
 o.ship_postal_code = row.ship_postal_code, o.ship_country = row.ship_country;
 
 
 // Create suppliers
-LOAD CSV WITH HEADERS FROM 'file:///suppliers.csv' AS row MERGE (s:suppliers {supplier_id: row.supplier_id}) ON CREATE SET s.company_name = row.company_name, s.contact_name = row.contact_name, s.contact_title = row.contact_title,
+LOAD CSV WITH HEADERS FROM 'file:///suppliers.csv' AS row MERGE (s:suppliers {supplier_id: toInteger(row.supplier_id)}) ON CREATE SET s.company_name = row.company_name, s.contact_name = row.contact_name, s.contact_title = row.contact_title,
 s.address = row.address, s.city = row.city, s.region = row.region, s.postal_code = row.postal_code, s.country = row.country, s.phone = row.phone, s.fax = row.fax, s.homepage = row.homepage;
 
 
 // Create employees
-LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MERGE (e:employees {employee_id:row.employee_id}) ON CREATE SET e.first_name = row.first_name, e.last_name = row.last_name, e.title = row.title, 
+LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MERGE (e:employees {employee_id: toInteger(row.employee_id)}) ON CREATE SET e.first_name = row.first_name, e.last_name = row.last_name, e.title = row.title, 
 e.title_of_courtesy = row.title_of_courtesy, e.birth_date = row.birth_date, e.hire_date = row.hire_date, e.address = row.address, e.city = row.city, e.region = row.region, e.postal_code = row.postal_code, e.country = row.country,
 e.home_phone = row.home_phone, e.extension = row.extension, e.photo = row.photo, e.notes = row.notes, e.reports_to = toInteger(row.reports_to), e.photo_path = row.photo_path;
 
@@ -44,27 +44,27 @@ RELATIONSHIPS:
 
 
 // Create relationships between orders and employees
-LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (o:orders {order_id: row.order_id}) MATCH (e:employees {employee_id: row.employee_id}) MERGE (e)-[:SOLD]->(o);
+LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (o:orders {order_id: toInteger(row.order_id)}) MATCH (e:employees {employee_id: toInteger(row.employee_id)}) MERGE (e)-[:SOLD]->(o);
 
 // Create relationships between products and suppliers
-LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MATCH (product:products {product_id: row.product_id}) MATCH (supplier:suppliers {supplier_id: row.supplier_id}) MERGE (supplier)-[:SUPPLIES]->(product);
+LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MATCH (product:products {product_id: toInteger(row.product_id)}) MATCH (supplier:suppliers {supplier_id: toInteger(row.supplier_id)}) MERGE (supplier)-[:SUPPLIES]->(product);
 
 // Create relationships between products and categories
-LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MATCH (product:products {product_id: row.product_id}) MATCH (category:categories {category_id: row.category_id}) MERGE (product)-[:PART_OF]->(category);
+LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MATCH (product:products {product_id: toInteger(row.product_id)}) MATCH (category:categories {category_id: toInteger(row.category_id)}) MERGE (product)-[:PART_OF]->(category);
 
 // Create relationships between employees (reporting hierarchy)
-LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MATCH (employee:employees {employee_id: row.employee_id}) MATCH (manager:employees {employee_id: row.reports_to}) MERGE (employee)-[:REPORTS_TO]->(manager);
+LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MATCH (employee:employees {employee_id: toInteger(row.employee_id)}) MATCH (manager:employees {employee_id: toInteger(row.reports_to)}) MERGE (employee)-[:REPORTS_TO]->(manager);
 
 // Create relationships between order_details and orders
-LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_details {order_id: row.order_id}) MATCH (o:orders {order_id: row.order_id}) MERGE (od)-[:INCLUDES]->(o);
+LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_details {order_id: toInteger(row.order_id)}) MATCH (o:orders {order_id: toInteger(row.order_id)}) MERGE (od)-[:INCLUDES]->(o);
 
 // Create relationships between order_details and product
-LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_details {product_id: row.product_id}) MATCH (p:products {product_id: row.product_id}) MERGE (od)-[:CONTAINS]->(p);
+LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_details {product_id: toInteger(row.product_id)}) MATCH (p:products {product_id: toInteger(row.product_id)}) MERGE (od)-[:CONTAINS]->(p);
 
 
 
 
 
 // Create relationships between orders and products
-LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (order:orders {order_id: row.order_id}) MATCH (product:products {product_id: row.product_id}) MERGE (order)-[op:CONTAINS]->(product) ON CREATE SET op.unitPrice = toFloat(row.UnitPrice), op.quantity = toFloat(row.Quantity);
+LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (order:orders {order_id: toInteger(row.order_id)}) MATCH (product:products {product_id: row.product_id}) MERGE (order)-[op:CONTAINS]->(product) ON CREATE SET op.unitPrice = toFloat(row.UnitPrice), op.quantity = toFloat(row.Quantity);
 
