@@ -513,7 +513,7 @@ class CypherQuery:
                                 item = str(obj).split(".")[0]
                             elif len(str(obj).split(" ")) == 2:
                                 item = str(obj).split(" ")[0] + " AS " + str(obj).split(" ")[1]
-                            elif has_union and len(str(obj).split(" ")) < 2:
+                            elif has_union and len(str(obj).split(" ")) < 2 and len(str(obj).split(".")) > 1:
                                 item = str(obj) + " AS " + str(obj).split(".")[1]
 
                             if index == len(list(t.get_identifiers())) - 1:
@@ -529,7 +529,7 @@ class CypherQuery:
                         elif len(str(t).split(" ")) == 2:
                             statement.text = statement.text + str(t).split(" ")[0] + " AS " + str(t).split(" ")[1]
                         else:
-                            if has_union and len(str(t).split(" ")) < 2:
+                            if has_union and len(str(t).split(" ")) < 2 and len(str(t).split(".")) > 1:
                                 statement.text = statement.text + str(t) + " AS " + str(t).split(".")[1]
                             else:
                                 statement.text = statement.text + str(t)
@@ -624,12 +624,12 @@ class CypherQuery:
                             statement.text += str(array[idx + 3])
                             if str(array[idx + 5]).upper() == "BETWEEN":
                                 statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + \
-                                                 prefix + str(token) + " =< " + str(array[idx + 11])
+                                                 prefix + str(token) + " <= " + str(array[idx + 11])
                                 skip_index = idx + 11
                         else:
                             if str(array[idx + 3]).upper() == "BETWEEN":
                                 statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
-                                                 prefix + str(token) + " =< " + str(array[idx + 9])
+                                                 prefix + str(token) + " <= " + str(array[idx + 9])
                                 skip_index = idx + 9
                     # exists
                     elif type(token) == sqlparse.sql.Function:
@@ -874,7 +874,7 @@ class CypherQuery:
                             statement.text += node_name + str(val)
                             if idx != len(list(token.get_identifiers())) - 1:
                                 statement.text += ", "
-                    elif type(token) == sqlparse.sql.Identifier:
+                    elif type(token) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function or type(token) == sqlparse.sql.Comparison:
                         if "." in str(token):
                             node_name = ""
                         statement.text += node_name + str(token)

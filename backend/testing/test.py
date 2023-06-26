@@ -135,7 +135,7 @@ def test_where_not_in_and_not_between():
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher", query, 0) == "MATCH (p:products) " \
-                                            "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price =< 20 " \
+                                            "WHERE NOT p.ProductName IN ['Chocolade','Chai'] AND NOT 10 <= p.Price <= 20 " \
                                             "RETURN p.ProductName, p.UnitPrice;"
 
 
@@ -210,7 +210,7 @@ def test_between():
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher", query, 0) == "MATCH (p:products) " \
-                                            "WHERE 1 <= p.Price =< 15 AND p.ProductName IN ['Chocolade'] " \
+                                            "WHERE 1 <= p.Price <= 15 AND p.ProductName IN ['Chocolade'] " \
                                             "RETURN p.ProductName, p.UnitPrice;"
 
 
@@ -268,7 +268,7 @@ def test_delete_with_many_conditions():
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher",
-                        query, 0) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' AND NOT c.City IN ['Stuttgart'] AND c.Service ENDS WITH \"ool\" AND 1 <= c.CustomerID =< 100 DELETE c;"
+                        query, 0) == "MATCH (c:Customers) WHERE c.CustomerName='Alfred' AND NOT c.City IN ['Stuttgart'] AND c.Service ENDS WITH \"ool\" AND 1 <= c.CustomerID <= 100 DELETE c;"
 
 
 def test_update_node():
@@ -283,14 +283,14 @@ def test_update_node():
 
 
 def test_update_with_alias():
-    query = "UPDATE Customers AS cust " \
-            "SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt' " \
-            "WHERE cust.CustomerID = 1;"
+    query = "UPDATE Customers " \
+            "SET ContactName = 'Alfred Schmidt', City= 'Frankfurt' " \
+            "WHERE CustomerID = 1;"
 
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher",
-                        query, 0) == "MATCH (cust:Customers) WHERE cust.CustomerID = 1 SET cust.ContactName = 'Alfred Schmidt', cust.City= 'Frankfurt';"
+                        query, 0) == "MATCH (Customers:Customers) WHERE Customers.CustomerID = 1 SET Customers.ContactName = 'Alfred Schmidt', Customers.City= 'Frankfurt';"
 
 
 def test_simple_having():
