@@ -2,8 +2,10 @@ import sqlfluff
 import backend.validation.Validator as validator
 import Converter
 
+# file is for testing and debugging purposes
+
 if __name__ == '__main__':
-    # some test queries
+    # test queries
 
     query1 = "SELECT e.EmployeeID, count(*) AS Count " \
              "FROM Employee AS e, test " \
@@ -96,13 +98,15 @@ if __name__ == '__main__':
             "SELECT product_name, unit_price FROM products " \
             "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price > (SELECT sum(unit_price) FROM products) ORDER BY unit_price;"
 
-    queryError = "SELECT cast, column AS c, col FROM table;"
+    querySQLError = "SELECT cast, column AS c, col FROM table;"
 
     queryHaving = "SELECT COUNT(s.supplier_id), s.country AS c FROM suppliers AS s GROUP BY c HAVING COUNT(s.supplier_id) > 2;"
 
     queryHaving2 = "SELECT p.product_name AS name,COUNT(p.unit_price) FROM products AS p GROUP BY name HAVING COUNT(p.unit_price) > (SELECT avg(products.unit_price) FROM products);"
 
-    query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
+    queryUNION = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
+
+    query = "SELECT e.employee_id, COALESCE(e.region,'no region') FROM employees AS e;"
 
     print("--------------------------------")
 

@@ -1,6 +1,11 @@
+Befehle um die Neo4j-Datenbank mit den CSV-Daten zu befüllen:
+
+
+docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\###INSERT_MOUNT_PATH###:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
+
 cypher-shell -u neo4j -p password
 
-docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\###INSERT_PATH###:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
+
 
 
 NODES:
@@ -15,10 +20,6 @@ p.units_in_stock = toInteger(row.units_in_stock), p.units_on_order = toInteger(r
 LOAD CSV WITH HEADERS FROM 'file:///categories.csv' AS row MERGE (c:categories {category_id: toInteger(row.category_id)}) 
 ON CREATE SET c.category_name = row.category_name, c.description = row.description, c.picture = row.picture;
 
-
-//Create order_details
-LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MERGE (od:order_details {order_id: toInteger(row.order_id), product_id: toInteger(row.product_id)}) 
-ON CREATE SET od.unit_price = toFloat(row.unit_price), od.quantity = toInteger(row.quantity), od.discount = toFloat(row.discount);
 
 // Create Orders
 LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MERGE (o:orders {order_id: toInteger(row.order_id)}) 
@@ -38,6 +39,13 @@ e.title_of_courtesy = row.title_of_courtesy, e.birth_date = row.birth_date, e.hi
 e.home_phone = row.home_phone, e.extension = row.extension, e.photo = row.photo, e.notes = row.notes, e.reports_to = toInteger(row.reports_to), e.photo_path = row.photo_path;
 
 
+Wenn order_details eigener Knoten sein soll:
+
+//Create order_details
+LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MERGE (od:order_details {order_id: toInteger(row.order_id), product_id: toInteger(row.product_id)}) 
+ON CREATE SET od.unit_price = toFloat(row.unit_price), od.quantity = toInteger(row.quantity), od.discount = toFloat(row.discount);
+
+
 
 
 RELATIONSHIPS:
@@ -55,6 +63,10 @@ LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MATCH (product:products
 // Create relationships between employees (reporting hierarchy)
 LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MATCH (employee:employees {employee_id: toInteger(row.employee_id)}) MATCH (manager:employees {employee_id: toInteger(row.reports_to)}) MERGE (employee)-[:REPORTS_TO]->(manager);
 
+
+
+Wenn order_details eigener Knoten ist:
+
 // Create relationships between order_details and orders
 LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_details {order_id: toInteger(row.order_id)}) MATCH (o:orders {order_id: toInteger(row.order_id)}) MERGE (od)-[:INCLUDES]->(o);
 
@@ -64,7 +76,9 @@ LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_de
 
 
 
+Wenn order_details eine Beziehung ist:
+
 
 // Create relationships between orders and products
-LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (order:orders {order_id: toInteger(row.order_id)}) MATCH (product:products {product_id: row.product_id}) MERGE (order)-[op:CONTAINS]->(product) ON CREATE SET op.unitPrice = toFloat(row.UnitPrice), op.quantity = toFloat(row.Quantity);
+LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (order:orders {order_id: toInteger(row.order_id)}) MATCH (product:products {product_id: row.product_id}) MERGE (order)-[op:CONTAINS]->(product) ON CREATE SET op.unit_price = toFloat(row.unit_price), op.quantity = toFloat(row.quantity);
 

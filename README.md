@@ -33,9 +33,9 @@ I am listing at least two possible ways to run the application.
 With Console:
 1. Install Python 3.10.8 directly : https://www.python.org/downloads/release/python-3108/
 2. Go inside the unzipped project folder
-3. Navigate the backend folder
-4. Run the command: "pip install -r requirements.txt" (should install the missing packages)
-5. Open Console in this folder (for example: SHIFT+RIGHTCLICK => open powershell)
+3. Navigate to the backend folder
+4. Run the command: "pip install -r requirements.txt" (should install missing packages)
+5. Open the Console in this folder (for example: SHIFT+RIGHTCLICK => open powershell)
 6. Run the command: "flask --app main/BackendFlask run" (should start the development flask server)
 
 With PyCharm:

@@ -45,12 +45,11 @@ class Validator:
 
     def init_validation(self):
         self.function_flag = False
-        self.misuse_keyword_flag = False
         self.is_insert_statement = False
         return
 
     def check_flags(self):
-        if self.function_flag or self.misuse_keyword_flag:
+        if self.function_flag:
             return False
         else:
             return True
@@ -62,11 +61,5 @@ class Validator:
                 return
 
         self.function_flag = True
-        return
-
-    def keyword_check(self, query_part):
-
-
-        #self.misuse_keyword_flag = True
         return
 

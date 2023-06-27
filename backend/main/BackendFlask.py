@@ -13,7 +13,7 @@ parser = reqparse.RequestParser()
 parser.add_argument('query')
 parser.add_argument('language')
 
-serious_error_codes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07", "LT06", "RF02", "RF03", "RF05", "ST07"] # maybe skip RF03
+serious_error_codes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07", "LT06", "RF02", "RF03", "RF05", "ST07", "AM07"]
 ignore_error_codes = ["AL07", "AM01", "AM02", "LT05", "LT07", "LT09", "LT12"]
 
 class Converter(Resource):

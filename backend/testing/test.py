@@ -165,6 +165,17 @@ def test_outer_join():
                                             "WHERE e.EmployeeID = 100 " \
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
+def test_outer_join_and_is_null():
+
+    query = "SELECT c.company_name, o.order_id FROM customers AS c FULL OUTER JOIN orders AS o ON (c.customer_id = o.customer_id) WHERE o.order_id IS NULL ORDER BY c.company_name;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (c:customers) " \
+                                               "OPTIONAL MATCH (o:orders)<-[:relationship]-(c:customers) " \
+                                               "WHERE o.order_id IS NULL " \
+                                               "RETURN c.company_name, o.order_id " \
+                                               "ORDER BY c.company_name;"
 
 def test_union_without_alias():
     query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"

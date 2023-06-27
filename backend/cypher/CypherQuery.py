@@ -403,7 +403,6 @@ class CypherQuery:
 
             if formatted:
                 subquery_depth += 1
-
             # recursion
             result = convert_query(sub_clause, True, False)
 
@@ -441,6 +440,7 @@ class CypherQuery:
         return text
 
     def add_join(self, match_query, comp, joined_node):
+
         values = comp.split(" ")
 
         # checks for name first then label
@@ -462,7 +462,7 @@ class CypherQuery:
                                                  values[len(values) - 1].split(".")[0])
 
         # relationship name variable
-        # direction is relevant
+        # direction is maybe relevant
         dir1 = "-"
         dir2 = "-"
         if joined_node == node1:
@@ -615,6 +615,7 @@ class CypherQuery:
 
                         statement.text += command_string
                     # for BETWEEN keyword
+
                     elif type(token) == sqlparse.sql.Identifier:
                         # check if alias exists already
                         if "." in str(token):
@@ -626,11 +627,13 @@ class CypherQuery:
                                 statement.text = statement.text + " " + str(array[idx + 7]) + " <= " + \
                                                  prefix + str(token) + " <= " + str(array[idx + 11])
                                 skip_index = idx + 11
-                        else:
-                            if str(array[idx + 3]).upper() == "BETWEEN":
-                                statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
+                        elif str(array[idx + 3]).upper() == "BETWEEN":
+                            statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
                                                  prefix + str(token) + " <= " + str(array[idx + 9])
-                                skip_index = idx + 9
+                            skip_index = idx + 9
+                        else:
+                            statement.text += str(token)
+
                     # exists
                     elif type(token) == sqlparse.sql.Function:
                         for idx, part in enumerate(token):
@@ -660,11 +663,12 @@ class CypherQuery:
 
                 if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" \
                         or text == "FULL JOIN" or text == "FULL OUTER JOIN":
+
                     match_query = self.get_match_part(OptionalMatchPart)
 
                     if match_query is None:
                         match_query = OptionalMatchPart()
-                        # for n in get_match_part(MatchPart).nodes:
+                        # for n in self.get_match_part(MatchPart).nodes:
                         #    match_query.add_node(n)
 
                         self.queryParts.append(match_query)
@@ -682,19 +686,19 @@ class CypherQuery:
 
                         if "AS" in [x.upper() for x in str(token).split(" ")]:
                             joined_node = Node(as_parts[0], as_parts[2])
-                            match_query.add_node(joined_node)
                         elif len(str(token).split(" ")) == 2:
                             joined_node = Node(as_parts[0], as_parts[1])
-                            match_query.add_node(joined_node)
                         else:
                             joined_node = Node(str(token), str(token))
-                            match_query.add_node(joined_node)
+
+                        match_query.add_node(joined_node)
 
                 for idx, token in enumerate(array):
                     if type(token) == sqlparse.sql.Parenthesis:
                         for comp in token:
                             if type(comp) == sqlparse.sql.Comparison:
                                 self.add_join(match_query, str(comp), joined_node)
+
                     if type(token) == sqlparse.sql.Comparison:
                         self.add_join(match_query, str(token), joined_node)
 
