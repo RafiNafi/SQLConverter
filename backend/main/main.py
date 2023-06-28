@@ -104,9 +104,7 @@ if __name__ == '__main__':
 
     queryHaving2 = "SELECT p.product_name AS name,COUNT(p.unit_price) FROM products AS p GROUP BY name HAVING COUNT(p.unit_price) > (SELECT avg(products.unit_price) FROM products);"
 
-    queryUNION = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
-
-    query = "SELECT e.employee_id, COALESCE(e.region,'no region') FROM employees AS e;"
+    query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
 
     print("--------------------------------")
 

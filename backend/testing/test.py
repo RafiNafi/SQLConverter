@@ -19,6 +19,14 @@ def test_implicit_aliasing_from():
     assert convert_type("Cypher", query, 0) == "MATCH (tab:tabelle),(tab2:tabelle2),(tab3:tabelle3),(tabelle4:tabelle4) " \
                                                "RETURN tab.col, tab2.var;"
 
+def test_implicit_aliasing_functions():
+
+    query = "SELECT e.employee_id id, COALESCE(e.region,'no region') col FROM employees e;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (e:employees) RETURN e.employee_id AS id, COALESCE(e.region,'no region') AS col;"
+
 def test_implicit_aliasing_select():
 
     query = "SELECT tab.val wert, tab.val2 AS variable FROM tabelle AS tab;"
@@ -318,7 +326,7 @@ def test_simple_having():
 
 
 def test_having_multiple_aggregations():
-    query = "SELECT COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c " \
+    query = "SELECT COUNT(Cust.CustomerID) AS count, SUM(Cust.price) AS sum, Cust.Country AS c " \
             "FROM Customers AS Cust " \
             "GROUP BY c " \
             "HAVING count > 5 AND sum < 10 " \
@@ -327,7 +335,7 @@ def test_having_multiple_aggregations():
     assert validator.Validator().query_syntax_validation(query)
 
     assert convert_type("Cypher",
-                        query, 0) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) As sum, Cust.Country AS c WHERE count > 5 AND sum < 10 RETURN count, sum, c ORDER BY count DESC;"
+                        query, 0) == "MATCH (Cust:Customers) WITH COUNT(Cust.CustomerID) AS count, SUM(Cust.price) AS sum, Cust.Country AS c WHERE count > 5 AND sum < 10 RETURN count, sum, c ORDER BY count DESC;"
 
 
 def test_switch_case():

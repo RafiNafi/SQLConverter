@@ -359,7 +359,7 @@ class CypherQuery:
                     if "AS" in [x.upper() for x in str(obj[1]).split(" ")]:
                         as_parts = str(obj[1]).split(" ")
                         statement.add_node(Node(as_parts[0], as_parts[2]))
-                    elif len(str(obj[1]).split(" ")) == 2:
+                    elif len(str(obj[1]).split(" ")) == 2 and type(obj[1]) == sqlparse.sql.Identifier:
                         as_parts = str(obj[1]).split(" ")
                         statement.add_node(Node(as_parts[0], as_parts[1]))
                     else:
@@ -480,6 +480,17 @@ class CypherQuery:
     def create_any_all_list_string(self, typ, list_name, operator, param):
         return "" + typ + "(var IN " + list_name + " WHERE " + param + " " + operator + " var)"
 
+    def get_array_parts(self, array):
+        filled_array = []
+
+        if type(array) != sqlparse.sql.Token:
+            for i in array:
+                filled_array.append(i)
+        else:
+            filled_array.append(str(array))
+
+        return filled_array
+
     def transform_query_part(self, text, array):
         global counter
         # if WHERE clause then cut into further pieces
@@ -508,11 +519,15 @@ class CypherQuery:
 
                             item = str(obj)
 
+                            array_parts = self.get_array_parts(obj)
+
                             # check for wildcards in identifiers
                             if type(obj) == sqlparse.sql.Identifier and obj.is_wildcard() and len(str(obj)) > 1:
                                 item = str(obj).split(".")[0]
-                            elif len(str(obj).split(" ")) == 2:
+                            elif len(str(obj).split(" ")) == 2 and type(obj) == sqlparse.sql.Identifier:
                                 item = str(obj).split(" ")[0] + " AS " + str(obj).split(" ")[1]
+                            elif len(array_parts) > 2 and type(obj[0]) == sqlparse.sql.Function:
+                                item = str(obj[0]) + " AS " + str(obj[len(array_parts)-1])
                             elif has_union and len(str(obj).split(" ")) < 2 and len(str(obj).split(".")) > 1:
                                 item = str(obj) + " AS " + str(obj).split(".")[1]
 
@@ -524,10 +539,14 @@ class CypherQuery:
                     elif type(t) == sqlparse.sql.Identifier or type(t) == sqlparse.sql.Function \
                             or str(t) == "*" or type(t) == sqlparse.sql.Case:
 
+                        array_parts = self.get_array_parts(t)
+
                         if len(str(t)) > 1 and "*" in str(t):
                             statement.text = statement.text + str(t).split(".")[0]
-                        elif len(str(t).split(" ")) == 2:
+                        elif len(str(t).split(" ")) == 2 and type(t) == sqlparse.sql.Identifier:
                             statement.text = statement.text + str(t).split(" ")[0] + " AS " + str(t).split(" ")[1]
+                        elif len(array_parts) > 2 and type(t) == sqlparse.sql.Function:
+                            statement.text = statement.text + str(t[0]) + " AS " + str(t[len(array_parts)-1])
                         else:
                             if has_union and len(str(t).split(" ")) < 2 and len(str(t).split(".")) > 1:
                                 statement.text = statement.text + str(t) + " AS " + str(t).split(".")[1]
@@ -629,7 +648,7 @@ class CypherQuery:
                                 skip_index = idx + 11
                         elif str(array[idx + 3]).upper() == "BETWEEN":
                             statement.text = statement.text + "" + str(array[idx + 5]) + " <= " + \
-                                                 prefix + str(token) + " <= " + str(array[idx + 9])
+                                             prefix + str(token) + " <= " + str(array[idx + 9])
                             skip_index = idx + 9
                         else:
                             statement.text += str(token)
@@ -800,14 +819,13 @@ class CypherQuery:
                                     flag = True
 
                         if not flag:
-                            temp_text += "alias"+str(number) + self.put_array_together_into_string(having_part[1:])
-                            statement.text += ", " + str(comp) + " AS " + " alias"+str(number)
+                            temp_text += "alias" + str(number) + self.put_array_together_into_string(having_part[1:])
+                            statement.text += ", " + str(comp) + " AS " + " alias" + str(number)
                             number += 1
                         else:
                             temp_text += str(having_part)
                     else:
                         temp_text += str(having_part)
-
 
                 statement_select.text = new_return_text
 
@@ -878,7 +896,8 @@ class CypherQuery:
                             statement.text += node_name + str(val)
                             if idx != len(list(token.get_identifiers())) - 1:
                                 statement.text += ", "
-                    elif type(token) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function or type(token) == sqlparse.sql.Comparison:
+                    elif type(token) == sqlparse.sql.Identifier or type(token) == sqlparse.sql.Function or type(
+                            token) == sqlparse.sql.Comparison:
                         if "." in str(token):
                             node_name = ""
                         statement.text += node_name + str(token)
