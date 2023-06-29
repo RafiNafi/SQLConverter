@@ -45,6 +45,19 @@ def test_simple_orderby():
                                                "RETURN tb.var " \
                                                "ORDER BY tb.var ASC;"
 
+def test_missing_whitespaces():
+
+    query = "SELECT unit_price FROM products " \
+            "WHERE product_name IN( SELECT product_name FROM products WHERE product_name LIKE 'T%');"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (products:products) " \
+                                               "WHERE product_name STARTS WITH \"T\" " \
+                                               "RETURN product_name AS sub0} WITH * " \
+                                               "MATCH (products:products) " \
+                                               "WHERE product_name IN [sub0] RETURN unit_price;"
+
 def test_simple_select_wildcard():
     query = "SELECT p.* " \
             "FROM products as p;"
@@ -445,6 +458,18 @@ def test_mixed_select_subquery_and_exists_subquery():
                         query, 0) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN v.SWS AS Lehrbelastung}" \
                                   " WITH * MATCH (Professoren:Professoren) RETURN Professoren.PersNr, Lehrbelastung;"
 
+def test_whitespaces_after_exists_clause():
+    query = "SELECT s.company_name " \
+            "FROM suppliers AS s " \
+            "WHERE EXISTS (SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher",
+                        query, 0) == "MATCH (s:suppliers) WHERE " \
+                                     "EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } " \
+                                     "RETURN s.company_name;"
+
 
 def test_simple_all_subquery():
     query = "SELECT p.product_name,p.product_id " \
@@ -472,6 +497,21 @@ def test_simple_any_subquery():
                                             "RETURN suppliers.supplier_id AS sub0} WITH collect(sub0) AS coll_list " \
                                             "MATCH (prod:products) WHERE prod.product_name = 'test' AND ANY(var IN coll_list WHERE prod.product_id < var) " \
                                             "RETURN prod.product_name, prod.product_id ORDER BY prod.product_id;"
+
+def test_any_all_missing_whitespaces():
+    query = "SELECT p.product_name,p.product_id " \
+            "FROM products AS p " \
+            "WHERE p.product_id>ANY(SELECT suppliers.supplier_id FROM suppliers WHERE suppliers.company_name LIKE 'S%') " \
+            "ORDER BY p.product_id;"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (suppliers:suppliers) " \
+                                               "WHERE suppliers.company_name STARTS WITH \"S\" " \
+                                               "RETURN suppliers.supplier_id AS sub0} WITH collect(sub0) AS coll_list MATCH (p:products) " \
+                                               "WHERE ANY(var IN coll_list WHERE p.product_id > var) " \
+                                               "RETURN p.product_name, p.product_id " \
+                                               "ORDER BY p.product_id;"
 
 def test_simple_missing_error():
     query = " "
