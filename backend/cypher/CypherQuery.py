@@ -3,11 +3,11 @@ import re
 from backend.cypher.CypherClasses import Node, Relationship, Property, Statement, MatchPart, OptionalMatchPart
 
 keywords_essential = ["SELECT", "INSERT", "UPDATE", "SET", "DELETE", "FROM", "JOIN", "WHERE", "GROUP BY", "ORDER BY",
-                      "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN",
-                      "RIGHT OUTER JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
+                      "FULL JOIN", "FULL OUTER JOIN", "LEFT OUTER JOIN", "LEFT JOIN",
+                      "RIGHT OUTER JOIN", "RIGHT JOIN", "INNER JOIN", "HAVING", "UNION", "UNION ALL", "LIMIT"]
 
-keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "RIGHT OUTER JOIN", "FULL OUTER JOIN",
-                    "FULL JOIN",
+keyword_in_order = ["SUBQUERY", "INSERT", "UPDATE", "FROM", "LEFT OUTER JOIN", "LEFT JOIN",
+                    "RIGHT OUTER JOIN", "RIGHT JOIN", "FULL OUTER JOIN", "FULL JOIN",
                     "HAVING", "WHERE", "SELECT", "SET", "DELETE", "ORDER BY", "LIMIT", "UNION", "UNION ALL"]
 
 counter = 0
@@ -440,7 +440,7 @@ class CypherQuery:
 
         return text
 
-    def add_join(self, match_query, comp, joined_node):
+    def add_join(self, match_query, comp, joined_node, join_type):
 
         values = comp.split(" ")
 
@@ -463,20 +463,45 @@ class CypherQuery:
                                                  values[len(values) - 1].split(".")[0])
 
         # relationship name variable
-        # direction is maybe relevant
-        dir1 = "-"
-        dir2 = "-"
-        if joined_node == node1:
-            dir1 = "-"
-            dir2 = "->"  # ->
-        elif joined_node == node2:
-            dir1 = "<-"  # <-
-            dir2 = "-"
+        # direction is relevant for outer joins
+
+        directions = self.caluclate_directions(joined_node, node1, node2, join_type)
+
+        dir1 = directions["dir1"]
+        dir2 = directions["dir2"]
 
         rel = Relationship("relationship", "", node2, node1, dir1, dir2)
         # add relationship to match query part
         match_query.add_relationship(rel)
+
+        #for i in match_query.relationships:
+        #    print(i.node_r.name + " " + i.node_l.name)
+
         return
+
+    def caluclate_directions(self, joined_node, node1, node2, join_type):
+
+        dir1 = "-"
+        dir2 = "-"
+
+        if join_type == "LEFT OUTER JOIN" or join_type == "LEFT JOIN" or \
+            join_type == "INNER JOIN" or join_type == "JOIN" or \
+                join_type == "FULL JOIN" or join_type == "FULL OUTER JOIN":
+            if joined_node == node1:
+                dir1 = "-"
+                dir2 = "->"  # ->
+            elif joined_node == node2:
+                dir1 = "<-"  # <-
+                dir2 = "-"
+        elif join_type == "RIGHT OUTER JOIN" or join_type == "RIGHT JOIN":
+            if joined_node == node1:
+                dir1 = "<-"
+                dir2 = "-"  # ->
+            elif joined_node == node2:
+                dir1 = "-"  # <-
+                dir2 = "->"
+
+        return {"dir1": dir1, "dir2": dir2}
 
     def create_any_all_list_string(self, typ, list_name, operator, param):
         return "" + typ + "(var IN " + list_name + " WHERE " + param + " " + operator + " var)"
@@ -540,7 +565,7 @@ class CypherQuery:
                             elif len(str(obj).split(" ")) == 2 and type(obj) == sqlparse.sql.Identifier:
                                 item = str(obj).split(" ")[0] + " AS " + str(obj).split(" ")[1]
                             elif len(array_parts) > 2 and type(obj[0]) == sqlparse.sql.Function:
-                                item = str(obj[0]) + " AS " + str(obj[len(array_parts)-1])
+                                item = str(obj[0]) + " AS " + str(obj[len(array_parts) - 1])
                             elif has_union and len(str(obj).split(" ")) < 2 and len(str(obj).split(".")) > 1:
                                 item = str(obj) + " AS " + str(obj).split(".")[1]
 
@@ -559,7 +584,7 @@ class CypherQuery:
                         elif len(str(t).split(" ")) == 2 and type(t) == sqlparse.sql.Identifier:
                             statement.text = statement.text + str(t).split(" ")[0] + " AS " + str(t).split(" ")[1]
                         elif len(array_parts) > 2 and type(t) == sqlparse.sql.Function:
-                            statement.text = statement.text + str(t[0]) + " AS " + str(t[len(array_parts)-1])
+                            statement.text = statement.text + str(t[0]) + " AS " + str(t[len(array_parts) - 1])
                         else:
                             if has_union and len(str(t).split(" ")) < 2 and len(str(t).split(".")) > 1:
                                 statement.text = statement.text + str(t) + " AS " + str(t).split(".")[1]
@@ -651,7 +676,6 @@ class CypherQuery:
                                 command_string += self.check_for_missing_whitespace(str(token[index + 1]))
                                 command_string = command_string.replace("(", "[").replace(")", "]")
 
-
                         statement.text += command_string
                     # for BETWEEN keyword
 
@@ -678,9 +702,9 @@ class CypherQuery:
 
                         exists_array = token
 
-                        if str(token) == "EXISTS" and type(array[idx+3]) == sqlparse.sql.Parenthesis:
+                        if str(token) == "EXISTS" and type(array[idx + 3]) == sqlparse.sql.Parenthesis:
                             skip_index = idx + 4
-                            exists_array = sqlparse.parse(str(token) + str(array[idx+3]))[0].tokens[0]
+                            exists_array = sqlparse.parse(str(token) + str(array[idx + 3]))[0].tokens[0]
 
                         for index, part in enumerate(exists_array):
                             print(part)
@@ -705,10 +729,11 @@ class CypherQuery:
                 statement.text = self.swap_text_with_previous(statement.text, "NOT")
 
                 return statement.text
-            case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN":
+            case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN" | "LEFT JOIN" | "RIGHT JOIN":
 
                 if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" \
-                        or text == "FULL JOIN" or text == "FULL OUTER JOIN":
+                        or text == "FULL JOIN" or text == "FULL OUTER JOIN" \
+                        or text == "LEFT JOIN" or text == "RIGHT JOIN":
 
                     match_query = self.get_match_part(OptionalMatchPart)
 
@@ -720,6 +745,7 @@ class CypherQuery:
                         self.queryParts.append(match_query)
 
                     query_text = "OPTIONAL MATCH "
+
                 else:
                     match_query = self.get_match_part(MatchPart)
                     query_text = "MATCH "
@@ -748,9 +774,9 @@ class CypherQuery:
 
                         for comp in comp_array:
                             if type(comp) == sqlparse.sql.Comparison:
-                                self.add_join(match_query, str(comp), joined_node)
+                                self.add_join(match_query, str(comp), joined_node, text)
                     elif type(token) == sqlparse.sql.Comparison:
-                        self.add_join(match_query, str(token), joined_node)
+                        self.add_join(match_query, str(token), joined_node, text)
 
                 # look for other conditions in join
                 parts = self.cutout_keyword_parts_from_array(["AND", "OR"], array)

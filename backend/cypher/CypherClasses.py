@@ -81,53 +81,92 @@ class MatchPart:
             if elem == node_l:
                 return index
 
+    def check_nodes_max_usage(self, array, rel):
+
+        counter = 0
+
+        for elem in array:
+            if type(elem) == Relationship:
+                if elem.node_l == rel.node_l or elem.node_r == rel.node_r or\
+                        elem.node_r == rel.node_l or elem.node_l == rel.node_r:
+                    counter += 1
+
+        if counter > 1:
+            return True
+
+        return False
+
     def generate_query_string(self, text):
 
         query = text
 
         # generate query
-        chain = []
+        chain = [[]]
 
         for r in self.relationships:
+            flag = True
 
-            if r.node_l in chain:
-                index = self.get_index_of_obj(chain, r.node_l)
+            for part_chain in chain:
 
-                if len(chain) == index + 1:
-                    chain.insert(index + 1, r.node_r)
-                    chain.insert(index + 1, r)
-                else:
-                    chain.insert(index, r)
-                    chain.insert(index, r.node_r)
-                continue
+                if self.check_nodes_max_usage(part_chain, r):
+                    chain.append([])
 
-            elif r.node_r in chain:
-                index = self.get_index_of_obj(chain, r.node_r)
+                    chain[len(chain) - 1].append(r.node_l)
+                    chain[len(chain) - 1].append(r)
+                    chain[len(chain) - 1].append(r.node_r)
+                    flag = False
+                    break
+                elif r.node_l in part_chain:
+                    index = self.get_index_of_obj(part_chain, r.node_l)
 
-                if len(chain) == index + 1:
-                    chain.insert(index + 1, r.node_l)
-                    chain.insert(index + 1, r)
-                else:
-                    chain.insert(index, r)
-                    chain.insert(index, r.node_l)
-                continue
+                    if len(part_chain) == index + 1:
+                        part_chain.insert(index + 1, r.node_r)
+                        part_chain.insert(index + 1, r)
+                    else:
+                        part_chain.insert(index, r)
+                        part_chain.insert(index, r.node_r)
+                    flag = False
+                    break
+                elif r.node_r in part_chain:
+                    index = self.get_index_of_obj(part_chain, r.node_r)
 
-            else:
-                chain.append(r.node_l)
-                chain.append(r)
-                chain.append(r.node_r)
+                    if len(part_chain) == index + 1:
+                        part_chain.insert(index + 1, r.node_l)
+                        part_chain.insert(index + 1, r)
+                    else:
+                        part_chain.insert(index, r)
+                        part_chain.insert(index, r.node_l)
+                    flag = False
+                    break
+            if flag:
+                if len(chain[len(chain) - 1]) > 0:
+                    chain.append([])
 
-        for elem in chain:
-            if type(elem) == Relationship:
-                query += elem.arrow_dir_l + "[" + elem.label + ":" + elem.name + "]" + elem.arrow_dir_r
-            elif type(elem) == Node:
-                query += "(" + elem.label + ":" + elem.name + ")"
+                chain[len(chain) - 1].append(r.node_l)
+                chain[len(chain) - 1].append(r)
+                chain[len(chain) - 1].append(r.node_r)
+
+
+
+        for idx, part_chain in enumerate(chain):
+            for elem in part_chain:
+                if type(elem) == Relationship:
+                    query += elem.arrow_dir_l + "[" + elem.label + ":" + elem.name + "]" + elem.arrow_dir_r
+                elif type(elem) == Node:
+                    query += "(" + elem.label + ":" + elem.name + ")"
+            if idx != len(chain) - 1:
+                query += ", "
 
         for n in self.nodes:
-            if n not in chain:
-                if len(chain) < 1:
+            found = False
+            for part_chain in chain:
+                if n in part_chain:
+                    found = True
+            if not found:
+                print(len(chain[len(chain)-1]))
+                if len(chain[len(chain)-1]) < 1:
                     query += "(" + n.label + ":" + n.name + ")"
-                    chain.append(n)
+                    chain[len(chain)-1].append(n)
                 else:
                     query += ",(" + n.label + ":" + n.name + ")"
 
