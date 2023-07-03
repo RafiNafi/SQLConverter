@@ -198,6 +198,22 @@ def test_outer_join_and_is_null():
                                                "RETURN c.company_name, o.order_id " \
                                                "ORDER BY c.company_name;"
 
+def test_mixed_multiple_joins():
+    query = "SELECT p.product_name AS n FROM products AS p " \
+            "JOIN suppliers AS s ON (s.supplier_id = p.supplier_id) " \
+            "JOIN categories AS c ON (c.category_id = p.category_id) " \
+            "JOIN order_details AS od ON (od.product_id = p.products_id) " \
+    "LEFT JOIN suppliers2 AS s2 ON (s2.supplier_id = s.supplier_id) " \
+    "LEFT JOIN categories2 AS c2 ON (c2.category_id = p.category_id) " \
+    "LEFT JOIN order_details2 AS od2 ON (od2.product_id = p.products_id);"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (c:categories)-[:relationship]->(p:products)-[:relationship]->(s:suppliers), (p:products)-[:relationship]->(od:order_details) " \
+                                               "OPTIONAL MATCH (s:suppliers)-[:relationship]->(s2:suppliers2)," \
+                                               " (od2:order_details2)-[:relationship]->(p:products)-[:relationship]->(c2:categories2)" \
+                                               " RETURN p.product_name AS n;"
+
 def test_union_without_alias():
     query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
 

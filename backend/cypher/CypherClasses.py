@@ -163,7 +163,7 @@ class MatchPart:
                 if n in part_chain:
                     found = True
             if not found:
-                print(len(chain[len(chain)-1]))
+                #print(len(chain[len(chain)-1]))
                 if len(chain[len(chain)-1]) < 1:
                     query += "(" + n.label + ":" + n.name + ")"
                     chain[len(chain)-1].append(n)

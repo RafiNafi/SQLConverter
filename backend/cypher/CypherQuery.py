@@ -442,7 +442,8 @@ class CypherQuery:
 
     def add_join(self, match_query, comp, joined_node, join_type):
 
-        values = comp.split(" ")
+        comp = comp.replace(" ", "")
+        values = comp.split("=")
 
         # checks for name first then label
 
@@ -462,7 +463,6 @@ class CypherQuery:
                 node2 = self.get_node_from_match(query_other_match,
                                                  values[len(values) - 1].split(".")[0])
 
-        # relationship name variable
         # direction is relevant for outer joins
 
         directions = self.caluclate_directions(joined_node, node1, node2, join_type)
@@ -473,9 +473,6 @@ class CypherQuery:
         rel = Relationship("relationship", "", node2, node1, dir1, dir2)
         # add relationship to match query part
         match_query.add_relationship(rel)
-
-        #for i in match_query.relationships:
-        #    print(i.node_r.name + " " + i.node_l.name)
 
         return
 
@@ -767,6 +764,7 @@ class CypherQuery:
 
                 for idx, token in enumerate(array):
                     if type(token) == sqlparse.sql.Parenthesis or type(token) == sqlparse.sql.Function:
+
                         comp_array = token
 
                         if type(token) == sqlparse.sql.Function:
