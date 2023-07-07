@@ -146,6 +146,27 @@ def test_mult_joins_mixed_alias():
                                       "RETURN EmployeeID, count(*) " \
                                       "ORDER BY count(*) DESC;"
 
+def test_join_with_mult_conditions():
+
+    query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "INNER JOIN employees AS manager ON e.reports_to = manager.employee_id AND e.first_name = 'A' OR e.first_name = 'B';"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)<-[:relationship]-(e:employees) " \
+                                               "WHERE e.first_name = 'A' OR e.first_name = 'B' " \
+                                               "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
+
+def test_join_with_mult_conditions_and_where():
+
+    query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "INNER JOIN employees AS manager ON e.first_name = 'A' AND e.reports_to = manager.employee_id WHERE manager.first_name = 'C';"
+
+    assert validator.Validator().query_syntax_validation(query)
+
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)<-[:relationship]-(e:employees) " \
+                                               "WHERE e.first_name = 'A' AND manager.first_name = 'C' " \
+                                               "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
 
 def test_where_not_in_and_not_between():
     query = "SELECT p.ProductName, p.UnitPrice " \
@@ -209,10 +230,11 @@ def test_mixed_multiple_joins():
 
     assert validator.Validator().query_syntax_validation(query)
 
-    assert convert_type("Cypher", query, 0) == "MATCH (c:categories)-[:relationship]->(p:products)-[:relationship]->(s:suppliers), (p:products)-[:relationship]->(od:order_details) " \
-                                               "OPTIONAL MATCH (s:suppliers)-[:relationship]->(s2:suppliers2)," \
-                                               " (od2:order_details2)-[:relationship]->(p:products)-[:relationship]->(c2:categories2)" \
-                                               " RETURN p.product_name AS n;"
+    assert convert_type("Cypher", query, 0) == "MATCH (c:categories)-[:relationship]->(p:products)-[:relationship]->(s:suppliers) " \
+                                               "\nMATCH (p:products)-[:relationship]->(od:order_details) " \
+                                               "OPTIONAL MATCH (s:suppliers)-[:relationship]->(s2:suppliers2) \nOPTIONAL MATCH " \
+                                               "(od2:order_details2)-[:relationship]->(p:products)-[:relationship]->(c2:categories2) " \
+                                               "RETURN p.product_name AS n;"
 
 def test_union_without_alias():
     query = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"

@@ -155,7 +155,10 @@ class MatchPart:
                 elif type(elem) == Node:
                     query += "(" + elem.label + ":" + elem.name + ")"
             if idx != len(chain) - 1:
-                query += ", "
+                if type(self) == OptionalMatchPart:
+                    query += " \nOPTIONAL MATCH "  # otherwise a comma
+                elif type(self) == MatchPart:
+                    query += " \nMATCH "  # otherwise a comma
 
         for n in self.nodes:
             found = False

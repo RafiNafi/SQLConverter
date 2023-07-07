@@ -318,6 +318,7 @@ class CypherQuery:
         return added_conditions_list
 
     def update_where_clause(self, array, index, text):
+
         # updates or creates new where clause
         global counter
         statement_where = self.get_query_part_by_name("WHERE")
@@ -344,7 +345,6 @@ class CypherQuery:
                 statement_where.text += str(token)
 
         statement_where.text += " "
-
         return
 
     def create_match_clause(self, array):
@@ -525,6 +525,37 @@ class CypherQuery:
         if text != " ":
             return " "
         return ""
+
+    def update_array(self, parts):
+
+        temp_text = ""
+        comp_constant = ""
+        previous_oper = ""
+
+        for text in parts:
+            if str(text) in ["AND", "OR"]:
+                previous_oper = str(text)
+            elif type(text) == sqlparse.sql.Comparison:
+                idf_count = 0
+                for token in text:
+                    if type(token) == sqlparse.sql.Identifier:
+                        idf_count += 1
+
+                if idf_count > 1:
+                    temp_text += str(text)
+                else:
+                    if comp_constant != "":
+                        comp_constant = comp_constant + previous_oper + " " + str(text) + " "
+                    else:
+                        comp_constant = comp_constant + str(text) + " "
+
+            else:
+                temp_text += str(text)
+
+        print(temp_text)
+        print(comp_constant)
+
+        return sqlparse.parse(temp_text)[0].tokens, comp_constant
 
     def transform_query_part(self, text, array):
         global counter
@@ -728,6 +759,16 @@ class CypherQuery:
                 return statement.text
             case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN" | "LEFT JOIN" | "RIGHT JOIN":
 
+                # look for other conditions in join
+                array, where_parts = self.update_array(array)
+
+                # parts = self.cutout_keyword_parts_from_array(["ON", "AND", "OR"], array)
+                # print(parts)
+
+                if where_parts != "":
+                    # create new or update existing where statement
+                    self.update_where_clause(where_parts, 0, "")  # previously index 0
+
                 if text == "LEFT OUTER JOIN" or text == "RIGHT OUTER JOIN" \
                         or text == "FULL JOIN" or text == "FULL OUTER JOIN" \
                         or text == "LEFT JOIN" or text == "RIGHT JOIN":
@@ -775,14 +816,6 @@ class CypherQuery:
                                 self.add_join(match_query, str(comp), joined_node, text)
                     elif type(token) == sqlparse.sql.Comparison:
                         self.add_join(match_query, str(token), joined_node, text)
-
-                # look for other conditions in join
-                parts = self.cutout_keyword_parts_from_array(["AND", "OR"], array)
-                print(parts)
-
-                if len(parts) > 1:
-                    # create new or update existing where statement
-                    self.update_where_clause(parts, 2, "")
 
                 return match_query.generate_query_string(query_text)
             case "GROUP BY":
