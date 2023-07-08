@@ -74,6 +74,7 @@ class Validator:
         # checks if there are too many keywords back to back
         count = 0
         pos = 1
+        previous_keyword = ""
 
         for i in tokens:
             if i.is_keyword:
@@ -82,10 +83,15 @@ class Validator:
                 pass
             else:
                 if count > 0:
-                    count -= 1
-            if count > 2:
+                    count = 0
+
+            if not i.is_whitespace and (count > 2 or (previous_keyword == "FROM" and count > 1)):
                 self.misuse_keyword_flag = True
                 break
+
+            if i.is_keyword:
+                previous_keyword = str(i).upper()
+
             pos += len(str(i))
 
         return pos

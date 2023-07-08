@@ -574,3 +574,12 @@ def test_misuse_keyword_error():
 
     assert not value[0]
     assert value[2] == 76
+
+def test_misuse_keyword_error_from():
+    query = "SELECT column, cast FROM table;"
+
+    value = validator.Validator().query_syntax_validation(query)
+
+    assert not value[0]
+    assert value[2] == 26
+
