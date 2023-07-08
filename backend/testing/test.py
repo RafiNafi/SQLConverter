@@ -560,11 +560,17 @@ def test_simple_missing_error():
 def test_simple_function_spelling_error():
     query = "SELECT suum(p.price) FROM products p;"
 
-    assert not validator.Validator().query_syntax_validation(query)[0]
+    value = validator.Validator().query_syntax_validation(query)
+
+    assert not value[0]
+    assert value[2] == 8
 
 
 def test_misuse_keyword_error():
     query = "SELECT e.first_name, alter.first_name FROM employees AS e " \
             "INNER JOIN alter ON e.reports_to = alter.employee_id;"
 
-    assert not validator.Validator().query_syntax_validation(query)[0]
+    value = validator.Validator().query_syntax_validation(query)
+
+    assert not value[0]
+    assert value[2] == 76

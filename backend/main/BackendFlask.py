@@ -34,9 +34,9 @@ class Converter(Resource):
             return ["", errors]
         else:
             validator = val.Validator()
-            valid, error_message = validator.query_syntax_validation(args.query)
+            valid, error_message, pos = validator.query_syntax_validation(args.query)
             if not valid:
-                errors.append({'line_no': 1, 'line_pos': 1, 'code': 'PRS', 'description': error_message, 'name': 'custom_error'})
+                errors.append({'line_no': 1, 'line_pos': pos, 'code': 'PRS', 'description': error_message, 'name': 'custom_error'})
                 return ["", errors]
 
         return [convert_type(args.language, args.query), errors]
