@@ -37,11 +37,14 @@ class Validator:
         if str(parsed.tokens[0]) == "INSERT":
             self.is_insert_statement = True
 
+        self.check_keyword_usage(parsed.tokens)
+
         self.recursiveTree(parsed.tokens)
 
         print("--------------------------------")
-        valid = self.check_flags()
-        return valid
+        valid, error_message = self.check_flags()
+
+        return valid, error_message
 
     def init_validation(self):
         self.function_flag = False
@@ -50,9 +53,26 @@ class Validator:
 
     def check_flags(self):
         if self.function_flag:
-            return False
+            return False, "Function name not correct."
+        elif self.misuse_keyword_flag:
+            return False, "Misuse of keyword."
         else:
-            return True
+            return True, ""
+
+    def check_keyword_usage(self, tokens):
+        # checks if there are too many keywords back to back
+        count = 0
+        for i in tokens:
+            if i.is_keyword:
+                count += 1
+            elif str(i) == " ":
+                pass
+            else:
+                if count > 0:
+                    count -= 1
+            if count > 2:
+                self.misuse_keyword_flag = True
+                break
 
     def function_check(self, query_part):
 

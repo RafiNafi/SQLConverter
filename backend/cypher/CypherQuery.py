@@ -532,12 +532,16 @@ class CypherQuery:
         comp_constant = ""
         previous_oper = ""
 
+        parts = sqlparse.parse(self.put_array_together_into_string(parts).replace("(", "").replace(")", ""))[0].tokens
+
         for text in parts:
             if str(text) in ["AND", "OR"]:
                 previous_oper = str(text)
             elif type(text) == sqlparse.sql.Comparison:
                 idf_count = 0
-                for token in text:
+                join_array = text
+
+                for token in join_array:
                     if type(token) == sqlparse.sql.Identifier:
                         idf_count += 1
 
