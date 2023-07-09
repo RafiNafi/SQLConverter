@@ -38,7 +38,7 @@ With Console:
 5. Open the Console in this folder (for example: SHIFT+RIGHTCLICK => open powershell)
 6. Run the command: "flask --app main/BackendFlask run" (should start the development flask server)
 
-With PyCharm:
+With PyCharm (IDE):
 1. Install PyCharm: https://www.jetbrains.com/de-de/pycharm/
 2. Open the unzipped project in PyCharm
 3. Install Python version

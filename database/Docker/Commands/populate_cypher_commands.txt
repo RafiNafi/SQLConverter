@@ -1,14 +1,18 @@
 Befehle um die Neo4j-Datenbank mit den CSV-Daten zu befüllen:
 
+###INSERT_MOUNT_PATH### ist ein Platzhalter für einen Dteipfad, der gemountet werden soll, wo dann die CSV-Dateien reinkopiert weden können.
 
+Container erstellen:
 docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\###INSERT_MOUNT_PATH###:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
 
+Datenbank-Konsole starten:
 cypher-shell -u neo4j -p password
 
 
 
+Befehle zur Befüllung der Datenbank:
 
-NODES:
+NODES
 
 //Create Products
 LOAD CSV WITH HEADERS FROM 'file:///products.csv' AS row MERGE (p:products {product_id: toInteger(row.product_id)}) 
@@ -39,6 +43,7 @@ e.title_of_courtesy = row.title_of_courtesy, e.birth_date = row.birth_date, e.hi
 e.home_phone = row.home_phone, e.extension = row.extension, e.photo = row.photo, e.notes = row.notes, e.reports_to = toInteger(row.reports_to), e.photo_path = row.photo_path;
 
 
+
 Wenn order_details eigener Knoten sein soll:
 
 //Create order_details
@@ -48,8 +53,7 @@ ON CREATE SET od.unit_price = toFloat(row.unit_price), od.quantity = toInteger(r
 
 
 
-RELATIONSHIPS:
-
+RELATIONSHIPS
 
 // Create relationships between orders and employees
 LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (o:orders {order_id: toInteger(row.order_id)}) MATCH (e:employees {employee_id: toInteger(row.employee_id)}) MERGE (e)-[:SOLD]->(o);
@@ -65,6 +69,7 @@ LOAD CSV WITH HEADERS FROM 'file:///employees.csv' AS row MATCH (employee:employ
 
 
 
+
 Wenn order_details eigener Knoten ist:
 
 // Create relationships between order_details and orders
@@ -77,7 +82,6 @@ LOAD CSV WITH HEADERS FROM 'file:///order_details.csv' AS row MATCH (od:order_de
 
 
 Wenn order_details eine Beziehung ist:
-
 
 // Create relationships between orders and products
 LOAD CSV WITH HEADERS FROM 'file:///orders.csv' AS row MATCH (order:orders {order_id: toInteger(row.order_id)}) MATCH (product:products {product_id: row.product_id}) MERGE (order)-[op:CONTAINS]->(product) ON CREATE SET op.unit_price = toFloat(row.unit_price), op.quantity = toFloat(row.quantity);
