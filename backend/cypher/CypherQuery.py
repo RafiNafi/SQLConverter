@@ -292,31 +292,6 @@ class CypherQuery:
             combined_result += str(single)
         return combined_result
 
-    def cutout_keyword_parts_from_array(self, keywords, array):
-        last_index = 0
-        added_conditions_list = []
-
-        for idx, token in enumerate(array):
-            if str(token) in keywords:
-
-                string_query = ""
-                for t in array[last_index:idx]:
-                    string_query += str(t)
-
-                added_conditions_list.append(string_query)
-                added_conditions_list.append(str(token) + str(array[idx + 1]))
-                last_index = idx + 2
-
-            if len(array) == idx + 1:
-
-                string_query = ""
-                for t in array[last_index:idx + 1]:
-                    string_query += str(t)
-
-                added_conditions_list.append(string_query)
-
-        return added_conditions_list
-
     def update_where_clause(self, array, index, text):
 
         # updates or creates new where clause
@@ -482,7 +457,6 @@ class CypherQuery:
         dir2 = "-"
 
         if join_type == "LEFT OUTER JOIN" or join_type == "LEFT JOIN" or \
-            join_type == "INNER JOIN" or join_type == "JOIN" or \
                 join_type == "FULL JOIN" or join_type == "FULL OUTER JOIN":
             if joined_node == node1:
                 dir1 = "-"

@@ -87,7 +87,7 @@ def test_check_simple_join():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]-(o:ord) " \
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
 def test_check_simple_implicit_join():
@@ -97,7 +97,7 @@ def test_check_simple_implicit_join():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (emp:Employee)-[:relationship]->(o:ord) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (emp:Employee)-[:relationship]-(o:ord) " \
                                                "RETURN emp.EmployeeID;"
 
 def test_check_simple_join_without_parenthesis():
@@ -107,7 +107,7 @@ def test_check_simple_join_without_parenthesis():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]->(o:ord) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]-(o:ord) " \
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
 
@@ -123,7 +123,7 @@ def test_mult_joins():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]->(o:ord)-[:relationship]->(p:products) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (e:Employee)-[:relationship]-(o:ord)-[:relationship]-(p:products) " \
                                             "WHERE e.EmployeeID = 100 " \
                                             "RETURN e.EmployeeID, count(*) AS numb " \
                                             "ORDER BY numb DESC " \
@@ -141,7 +141,7 @@ def test_mult_joins_mixed_alias():
     assert validator.Validator().query_syntax_validation(query)[0]
 
     assert convert_type("Cypher",
-                            query, 0) == "MATCH (Employee:Employee)-[:relationship]->(ord:ord)-[:relationship]->(p:products) " \
+                            query, 0) == "MATCH (Employee:Employee)-[:relationship]-(ord:ord)-[:relationship]-(p:products) " \
                                       "WHERE EmployeeID = 100 " \
                                       "RETURN EmployeeID, count(*) " \
                                       "ORDER BY count(*) DESC;"
@@ -153,7 +153,7 @@ def test_join_with_mult_conditions():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)<-[:relationship]-(e:employees) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)-[:relationship]-(e:employees) " \
                                                "WHERE e.first_name = 'A' OR e.first_name = 'B' " \
                                                "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
 
@@ -164,7 +164,7 @@ def test_join_with_mult_conditions_and_where():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)<-[:relationship]-(e:employees) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees)-[:relationship]-(e:employees) " \
                                                "WHERE e.first_name = 'A' AND manager.first_name = 'C' " \
                                                "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
 
@@ -230,8 +230,8 @@ def test_mixed_multiple_joins():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "MATCH (c:categories)-[:relationship]->(p:products)-[:relationship]->(s:suppliers) " \
-                                               "\nMATCH (p:products)-[:relationship]->(od:order_details) " \
+    assert convert_type("Cypher", query, 0) == "MATCH (c:categories)-[:relationship]-(p:products)-[:relationship]-(s:suppliers) " \
+                                               "\nMATCH (p:products)-[:relationship]-(od:order_details) " \
                                                "OPTIONAL MATCH (s:suppliers)-[:relationship]->(s2:suppliers2) \nOPTIONAL MATCH " \
                                                "(od2:order_details2)-[:relationship]->(p:products)-[:relationship]->(c2:categories2) " \
                                                "RETURN p.product_name AS n;"

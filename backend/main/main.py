@@ -2,6 +2,8 @@ import sqlfluff
 import backend.validation.Validator as validator
 import Converter
 
+serious_error_codes = ["PRS", "RF01", "RF04", "AL04", "CV03", "CV07", "LT06", "RF02", "RF03", "RF05", "ST07", "AM07"]
+
 # file is for testing and debugging purposes
 
 if __name__ == '__main__':
@@ -76,23 +78,23 @@ if __name__ == '__main__':
               "FROM suppliers AS s " \
               "WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e');"
 
-    query15 = "SELECT PersNr, " \
+    querySubSelect = "SELECT PersNr, " \
               "(SELECT SWS FROM Vorlesungen WHERE EXISTS(SELECT x.company_name FROM suppliers AS x WHERE x.company_name LIKE '%e')) " \
               "FROM Professoren;"
 
-    query16 = "SELECT p.product_name " \
+    queryALL = "SELECT p.product_name " \
               "FROM products AS p " \
               "WHERE p.product_id > ALL(SELECT s.supplier_id FROM suppliers AS s WHERE s.company_name LIKE 'S%');"
 
-    query22 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
+    querySub1 = "SELECT product_name, unit_price FROM products WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') " \
               "AND unit_price > (SELECT avg(unit_price) FROM products) ORDER BY unit_price;"
 
-    query11 = "SELECT s.suppliername " \
+    queryWhere = "SELECT s.suppliername " \
               "FROM Suppliers AS s " \
               "WHERE s.suppliername = 'Adidas' " \
               "AND s.suppliername LIKE 'a%';"
 
-    query55 = "SELECT product_name, unit_price FROM products " \
+    querySub2 = "SELECT product_name, unit_price FROM products " \
             "WHERE product_name IN (SELECT product_name FROM products WHERE product_name LIKE 'T%') AND unit_price < (SELECT avg(unit_price) FROM products) " \
             "UNION ALL " \
             "SELECT product_name, unit_price FROM products " \
@@ -104,11 +106,40 @@ if __name__ == '__main__':
 
     queryUNION = "SELECT e.city FROM employees AS e UNION SELECT s.city FROM suppliers AS s ORDER BY city;"
 
-    queryKeywordError = "SELECT cast, column AS c, col FROM table;"
+    queryMultiple = "SELECT e.first_name AS Employee, manager.first_name AS Manager, o.order_id FROM employees AS e " \
+                    "LEFT OUTER JOIN employees AS manager ON (e.reports_to = manager.employee_id) " \
+                    "JOIN orders As o ON (e.employee_id = o.employee_id);"
 
-    query = "SELECT e.EmployeeID " \
-             "FROM Employee AS e " \
-             "JOIN ord AS o ON (o.EmployeeID = e.EmployeeID);"
+    queryMULTIPLEJoins = "SELECT p.product_name AS n FROM products AS p " \
+            "JOIN suppliers AS s ON (s.supplier_id = p.supplier_id) " \
+            "JOIN categories AS c ON (c.category_id = p.category_id) " \
+            "JOIN order_details AS od ON (od.product_id = p.products_id) " \
+    "LEFT JOIN suppliers2 AS s2 ON (s2.supplier_id = s.supplier_id) " \
+    "LEFT JOIN categories2 AS c2 ON (c2.category_id = p.category_id) " \
+    "LEFT JOIN order_details2 AS od2 ON (od2.product_id = p.products_id);"
+
+    queryJOINS = "SELECT p.product_name AS n FROM products AS p " \
+            "JOIN categories AS c ON (c.category_id = p.category_id) " \
+            "JOIN suppliers AS s ON (s.supplier_id = p.supplier_id) " \
+            "JOIN order_details AS od ON (od.product_id = p.products_id);"
+
+    queryErrorLike = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "INNER JOIN employees AS manager ON e.reports_to = manager.employee_id AND e.first_name LIKE 'M%' WHERE manager.first_name = 'C';"
+
+    queryParenthesis = "SELECT e.employee_id FROM Employee AS e JOIN orders ON orders.employee_id = e.employee_id AND (e.employee_id >= 2 OR e.employee_id >= 3) " \
+            "WHERE e.first_name = 'C' AND e.first_name LIKE 'M%';"
+
+    queryError = "SELECT column, cast FROM table;"
+
+    queryKeywordError = "SELECT e.first_name, alter.first_name FROM employees AS e " \
+            "INNER JOIN alter ON e.reports_to = alter.employee_id;"
+
+    queryFuncParameter = "SELECT COUNT(s.supplier_id, s.supplier_id) AS numb, s.country AS c FROM suppliers AS s;"
+
+    queryDotError = "SELECT tabelle.spalte1, tabelle.spalte2 FROM tabelle WHERE tabelle..spalte2 > 2;"
+
+    query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "LEFT OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id;"
 
     print("--------------------------------")
 
@@ -122,6 +153,9 @@ if __name__ == '__main__':
 
     print("\n")
     for line in sqlfluff.lint(query):
-        print(line)
+        if line["code"] in serious_error_codes:
+            print("\u001b[31m" + str(line))
+        else:
+            print("\u001b[33m" + str(line))
 
     print("--------------------------------")
