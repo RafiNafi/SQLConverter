@@ -12,9 +12,12 @@ class Validator:
         self.function_flag = False
         self.misuse_keyword_flag = False
         self.function_param_flag = False
+        self.too_many_dots = False
+
+        self.is_insert_statement = False
+
         f = open(backend.DATA_DIR)
         self.functions = json.load(f)['functions']
-        self.is_insert_statement = False
 
     def recursiveTree(self, tokenT):
         global pos
@@ -57,7 +60,11 @@ class Validator:
 
     def init_validation(self):
         self.function_flag = False
+        self.too_many_dots = False
+        self.misuse_keyword_flag = False
+        self.function_param_flag = False
         self.is_insert_statement = False
+
         global pos, return_pos
         pos = 1
         return_pos = 1
@@ -70,6 +77,8 @@ class Validator:
             return False, "Misuse of keyword."
         elif self.function_param_flag:
             return False, "Wrong number of function parameter."
+        elif self.too_many_dots:
+            return False, "Too many dots in identifiers."
         else:
             return True, ""
 
@@ -80,6 +89,12 @@ class Validator:
         previous_keyword = ""
 
         for i in tokens:
+            # check for too many dots first
+            if type(i) == sqlparse.sql.Identifier or type(i) == sqlparse.sql.IdentifierList:
+                if self.check_identifiers(i):
+                    self.too_many_dots = True
+                    break
+
             if i.is_keyword:
                 count += 1
             elif i.is_whitespace:
@@ -98,6 +113,34 @@ class Validator:
             pos += len(str(i))
 
         return pos
+
+    def check_identifiers(self, idf):
+
+        if type(idf) == sqlparse.sql.Identifier:
+            count = 0
+            text = str(idf)
+            print(text)
+            for char in text:
+                if char == ".":
+                    count += 1
+                    if count > 1:
+                        return True
+                else:
+                    count = 0
+        elif type(idf) == sqlparse.sql.IdentifierList:
+            for ids in idf:
+                if type(ids) == sqlparse.sql.Identifier:
+                    count = 0
+                    text = str(ids)
+                    print(text)
+                    for char in text:
+                        if char == ".":
+                            count += 1
+                            if count > 1:
+                                return True
+                        else:
+                            count = 0
+        return False
 
     def function_check(self, query_part):
         global return_pos
@@ -127,8 +170,9 @@ class Validator:
 
                         for obj in self.functions:
                             if str(query_part[0]).upper() == obj['name']:
-                                if obj['max_param_count'] != idf_count and obj['max_param_count'] != "*":
-                                    return True
+                                if obj['max_param_count'] != "*":
+                                    if int(obj['max_param_count']) < idf_count:
+                                        return True
 
                     elif type(text) == sqlparse.sql.Identifier:
 

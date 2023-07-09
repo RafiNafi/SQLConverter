@@ -591,3 +591,13 @@ def test_wrong_function_parameter_number():
     assert not value[0]
     assert value[2] == 8
 
+
+def test_too_many_dots():
+    query = "SELECT tabelle.spalte1, tabelle..spalte2 FROM tabelle;"
+
+    value = validator.Validator().query_syntax_validation(query)
+
+    assert not value[0]
+    assert value[2] == 8
+
+
