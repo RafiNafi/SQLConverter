@@ -90,10 +90,9 @@ class Validator:
 
         for i in tokens:
             # check for too many dots first
-            if type(i) == sqlparse.sql.Identifier or type(i) == sqlparse.sql.IdentifierList:
-                if self.check_identifiers(i):
-                    self.too_many_dots = True
-                    break
+            if self.check_identifiers(i):
+                self.too_many_dots = True
+                break
 
             if i.is_keyword:
                 count += 1
@@ -116,30 +115,17 @@ class Validator:
 
     def check_identifiers(self, idf):
 
-        if type(idf) == sqlparse.sql.Identifier:
-            count = 0
-            text = str(idf)
-            print(text)
-            for char in text:
-                if char == ".":
-                    count += 1
-                    if count > 1:
-                        return True
-                else:
-                    count = 0
-        elif type(idf) == sqlparse.sql.IdentifierList:
-            for ids in idf:
-                if type(ids) == sqlparse.sql.Identifier:
-                    count = 0
-                    text = str(ids)
-                    print(text)
-                    for char in text:
-                        if char == ".":
-                            count += 1
-                            if count > 1:
-                                return True
-                        else:
-                            count = 0
+        count = 0
+        text = str(idf)
+        # print(text)
+        for char in text:
+            if char == ".":
+                count += 1
+                if count > 1:
+                    return True
+            else:
+                count = 0
+
         return False
 
     def function_check(self, query_part):
