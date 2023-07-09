@@ -11,6 +11,7 @@ class Validator:
     def __init__(self):
         self.function_flag = False
         self.misuse_keyword_flag = False
+        self.function_param_flag = False
         f = open(backend.DATA_DIR)
         self.functions = json.load(f)['functions']
         self.is_insert_statement = False
@@ -67,6 +68,8 @@ class Validator:
             return False, "Function name not correct."
         elif self.misuse_keyword_flag:
             return False, "Misuse of keyword."
+        elif self.function_param_flag:
+            return False, "Wrong number of function parameter."
         else:
             return True, ""
 
@@ -99,6 +102,12 @@ class Validator:
     def function_check(self, query_part):
         global return_pos
 
+        self.function_param_flag = self.check_param_count(query_part)
+
+        if self.function_param_flag:
+            return_pos = pos
+            return
+
         for obj in self.functions:
             if str(query_part[0]).upper() == obj['name']:
                 return
@@ -108,3 +117,28 @@ class Validator:
         self.function_flag = True
         return
 
+    def check_param_count(self, query_part):
+
+        for func_part in query_part:
+            if type(func_part) == sqlparse.sql.Parenthesis:
+                for text in func_part:
+                    if type(text) == sqlparse.sql.IdentifierList:
+                        idf_count = self.get_id_count(text.get_identifiers())
+
+                        for obj in self.functions:
+                            if str(query_part[0]).upper() == obj['name']:
+                                if obj['max_param_count'] != idf_count and obj['max_param_count'] != "*":
+                                    return True
+
+                    elif type(text) == sqlparse.sql.Identifier:
+
+                        for obj in self.functions:
+                            if str(query_part[0]).upper() == obj['name']:
+                                if (len(str(text).split(" ")) > 1 or obj['max_param_count'] != "1") and obj['max_param_count'] != "*":
+                                    return True
+
+    def get_id_count(self, idf):
+        count = 0
+        for id in idf:
+            count += 1
+        return count

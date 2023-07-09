@@ -583,3 +583,11 @@ def test_misuse_keyword_error_from():
     assert not value[0]
     assert value[2] == 26
 
+def test_wrong_function_parameter_number():
+    query = "SELECT COUNT(s.supplier_id, s.supplier_id) AS numb, s.country AS c FROM suppliers AS s;"
+
+    value = validator.Validator().query_syntax_validation(query)
+
+    assert not value[0]
+    assert value[2] == 8
+
