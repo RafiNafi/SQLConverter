@@ -14,16 +14,19 @@ counter = 0
 subquery_depth = 0
 form = ""
 previous_name = ""
+previous_name_having = {}
 formatted = False
 has_union = False
-
+depth = 0
 
 # wrapper to set initial variables
 def init_convert(query_parts, formats):
-    global counter, form, subquery_depth, formatted, has_union
+    global counter, form, subquery_depth, formatted, has_union, previous_name_having, depth
     counter = 0
     subquery_depth = 0
     has_union = False
+    previous_name_having = {}
+    depth = 0
 
     if formats == 1:
         form = "\n"
@@ -181,6 +184,13 @@ class CypherQuery:
             if "AS" not in [x.upper() for x in statement_r.text.split(" ")]:
                 statement_r.text += " AS sub" + str(counter)
 
+                global previous_name_having
+                print(previous_name_having)
+                if depth in previous_name_having:
+                    previous_name_having[depth].append("sub" + str(counter))
+                else:
+                    previous_name_having[depth] = ["sub" + str(counter)]
+
             parsed = sqlparse.parse(statement_r.text)[0]
             for token in parsed.tokens:
                 if type(token) == sqlparse.sql.Identifier:
@@ -210,9 +220,10 @@ class CypherQuery:
 
     def combine_query(self):
 
+        self.update_having_clause()
         self.add_subquery_name()
         combined_query_string = ""
-        global subquery_depth
+        global subquery_depth, depth
 
         # combine query based on keyword order in array
         for key in keyword_in_order:
@@ -238,6 +249,8 @@ class CypherQuery:
 
         if formatted and subquery_depth > 0:
             subquery_depth -= 1
+        if depth > 0:
+            depth -= 1
 
         return combined_query_string
 
@@ -285,6 +298,25 @@ class CypherQuery:
             print(self.transform_query_part(str(self.sql_query_parts[i][0]).upper(), self.sql_query_parts[i]))
 
         return self.combine_query()
+
+    def update_having_clause(self):
+        global previous_name_having
+        statement = self.get_query_part_by_name("HAVING")
+        print(previous_name_having)
+        if statement is not None:
+            if statement.text[-1] == " " and len(previous_name_having) > 0:
+                for array in previous_name_having.keys():
+                    if depth == array - 1:
+                        for sub in previous_name_having[array]:
+                            statement.text = statement.text[:-1] + ", " + sub + " "
+                        previous_name_having[array].clear()
+            elif len(previous_name_having) > 0:
+                for array in previous_name_having.keys():
+                    if depth == array - 1:
+                        for sub in previous_name_having[array]:
+                            statement.text += ", " + sub + " "
+                        previous_name_having[array].clear()
+
 
     def put_array_together_into_string(self, array):
         combined_result = ""
@@ -372,13 +404,16 @@ class CypherQuery:
 
     def create_subquery(self, text, collected):
 
-        global subquery_depth
+        global subquery_depth, depth
         sub_clause = str(text)[1:-1].lstrip()
 
         if sub_clause.split(" ")[0] == "SELECT":
 
             if formatted:
                 subquery_depth += 1
+
+            depth += 1
+
             # recursion
             result = convert_query(sub_clause, True, False)
 
@@ -386,7 +421,7 @@ class CypherQuery:
                 sub_result_string = "\t" * subquery_depth + "CALL{" + form + "" + result + "} WITH " \
                                                                                            "collect(" + self.get_correct_subquery_alias() + ") AS coll_list "
             else:
-                sub_result_string = "\t" * subquery_depth + "CALL{" + form + "" + result + "} WITH * "
+                sub_result_string = "\t" * subquery_depth + "CALL{" + form + "" + result + "} "  # earlier "with *"
 
             sub_statement = Statement("SUBQUERY", sub_result_string, [])
             self.queryParts.append(sub_statement)
@@ -660,6 +695,7 @@ class CypherQuery:
                                     else:
                                         command_string += self.get_correct_subquery_alias()
                                     counter += 1
+
                             # for an and all statements
                             if type(word) == sqlparse.sql.Function:
 
@@ -672,7 +708,6 @@ class CypherQuery:
                                             command_string += self.create_any_all_list_string(keyword, "coll_list",
                                                                                               str(temp_array[1]),
                                                                                               str(temp_array[0]))
-
                             # for LIKE and IN keywords
                             elif str(word).upper() == "LIKE" or str(word).upper() == "NOT LIKE":
                                 parts = str(command_string).split(" ")
@@ -735,7 +770,8 @@ class CypherQuery:
                 statement.text = self.swap_text_with_previous(statement.text, "NOT")
 
                 return statement.text
-            case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" | "RIGHT OUTER JOIN" | "LEFT JOIN" | "RIGHT JOIN":
+            case "JOIN" | "INNER JOIN" | "FULL JOIN" | "FULL OUTER JOIN" | "LEFT OUTER JOIN" |\
+                 "RIGHT OUTER JOIN" | "LEFT JOIN" | "RIGHT JOIN":
 
                 # look for other conditions in join
                 array, where_parts = self.update_array(array)

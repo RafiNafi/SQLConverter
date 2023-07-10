@@ -54,7 +54,7 @@ def test_missing_whitespaces():
 
     assert convert_type("Cypher", query, 0) == "CALL{MATCH (products:products) " \
                                                "WHERE product_name STARTS WITH \"T\" " \
-                                               "RETURN product_name AS sub0} WITH * " \
+                                               "RETURN product_name AS sub0} " \
                                                "MATCH (products:products) " \
                                                "WHERE product_name IN [sub0] RETURN unit_price;"
 
@@ -427,7 +427,7 @@ def test_subquery_one_statement():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "CALL{MATCH (b:products) RETURN avg(b.unit_price) AS sub0} WITH * " \
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (b:products) RETURN avg(b.unit_price) AS sub0} " \
                                             "MATCH (p:products) WHERE p.unit_price > sub0 RETURN p.product_name, p.unit_price;"
 
 
@@ -438,8 +438,8 @@ def test_subquery_where_nested_statements():
     assert validator.Validator().query_syntax_validation(query)[0]
 
     assert convert_type("Cypher",
-                        query, 0) == "CALL{CALL{MATCH (p:products) WHERE p.product_name STARTS WITH \"T\" RETURN p.product_name AS sub0} WITH * " \
-                                  "MATCH (products:products) WHERE NOT products.product_name IN [sub0] RETURN avg(products.unit_price) AS sub1} WITH * " \
+                        query, 0) == "CALL{CALL{MATCH (p:products) WHERE p.product_name STARTS WITH \"T\" RETURN p.product_name AS sub0} " \
+                                  "MATCH (products:products) WHERE NOT products.product_name IN [sub0] RETURN avg(products.unit_price) AS sub1} " \
                                   "MATCH (p:products) WHERE p.unit_price > sub1 RETURN p.product_name, p.unit_price;"
 
 
@@ -449,8 +449,8 @@ def test_subquery_where_multiple_statement():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "CALL{MATCH (p:products) RETURN avg(p.unit_price) AS sub0} WITH * " \
-                                            "CALL{MATCH (p:products) WHERE p.product_name STARTS WITH \"T\" RETURN p.product_name AS sub1} WITH * " \
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (p:products) RETURN avg(p.unit_price) AS sub0} " \
+                                            "CALL{MATCH (p:products) WHERE p.product_name STARTS WITH \"T\" RETURN p.product_name AS sub1} " \
                                             "MATCH (p:products) WHERE p.unit_price > sub0 AND p.product_name IN [sub1] RETURN p.product_name, p.unit_price;"
 
 
@@ -460,7 +460,7 @@ def test_subquery_select():
     assert validator.Validator().query_syntax_validation(query)[0]
 
     assert convert_type("Cypher",
-                        query, 0) == "CALL{MATCH (v:Vorlesungen) WHERE v.gelesenVon=Professoren.PersNr RETURN sum(v.SWS) AS Lehrbelastung} WITH * " \
+                        query, 0) == "CALL{MATCH (v:Vorlesungen) WHERE v.gelesenVon=Professoren.PersNr RETURN sum(v.SWS) AS Lehrbelastung} " \
                                   "MATCH (Professoren:Professoren) RETURN Professoren.name, Lehrbelastung, Professoren.PersNr;"
 
 
@@ -469,8 +469,8 @@ def test_subquery_having():
 
     assert validator.Validator().query_syntax_validation(query)[0]
 
-    assert convert_type("Cypher", query, 0) == "CALL{MATCH (products:products) RETURN avg(products.unit_price) AS sub0} WITH * " \
-                                            "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS alias1 WHERE alias1 > sub0 RETURN name, alias1;"
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (products:products) RETURN avg(products.unit_price) AS sub0} " \
+                                            "MATCH (p:products) WITH p.product_name AS name, COUNT(p.unit_price) AS alias1, sub0 WHERE alias1 > sub0 RETURN name, alias1;"
 
 
 def test_subquery_exists():
@@ -494,7 +494,7 @@ def test_mixed_select_subquery_and_exists_subquery():
 
     assert convert_type("Cypher",
                         query, 0) == "CALL{MATCH (v:Vorlesungen) WHERE EXISTS{MATCH (x:suppliers) WHERE x.company_name ENDS WITH \"e\" } RETURN v.SWS AS Lehrbelastung}" \
-                                  " WITH * MATCH (Professoren:Professoren) RETURN Professoren.PersNr, Lehrbelastung;"
+                                  " MATCH (Professoren:Professoren) RETURN Professoren.PersNr, Lehrbelastung;"
 
 def test_whitespaces_after_exists_clause():
     query = "SELECT s.company_name " \
@@ -550,6 +550,35 @@ def test_any_all_missing_whitespaces():
                                                "WHERE ANY(var IN coll_list WHERE p.product_id > var) " \
                                                "RETURN p.product_name, p.product_id " \
                                                "ORDER BY p.product_id;"
+
+def test_having_nested_queries():
+    query = "SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname " \
+            "HAVING COUNT(p.unit_price) > (SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname " \
+            "HAVING COUNT(p.unit_price) > (SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname HAVING COUNT(p.unit_price) > 2));"
+
+    assert validator.Validator().query_syntax_validation(query)[0]
+
+    assert convert_type("Cypher", query, 0) == "CALL{CALL{MATCH (p:products) WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1 " \
+                                               "WHERE alias1 > 2 RETURN pname, alias1 AS sub0} MATCH (p:products) " \
+                                               "WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1, sub0 " \
+                                               "WHERE alias1 > sub0 RETURN pname, alias1 AS sub1} MATCH (p:products) " \
+                                               "WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1, sub1 " \
+                                               "WHERE alias1 > sub1 RETURN pname, alias1;"
+
+def test_having_queries_on_same_level():
+    query = "SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p " \
+            "WHERE pname < (SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname " \
+            "HAVING COUNT(p.unit_price) > 3) HAVING COUNT(p.unit_price) > " \
+            "(SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname HAVING COUNT(p.unit_price) > 2) ;"
+
+    assert validator.Validator().query_syntax_validation(query)[0]
+
+    assert convert_type("Cypher", query, 0) == "CALL{MATCH (p:products) WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1" \
+                                               " WHERE alias1 > 3 RETURN pname, alias1 AS sub0} CALL{MATCH (p:products) " \
+                                               "WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1 " \
+                                               "WHERE alias1 > 2 RETURN pname, alias1 AS sub1} " \
+                                               "MATCH (p:products) WITH p.product_name AS pname, COUNT(p.unit_price) AS alias1, sub0, sub1 " \
+                                               "WHERE pname < sub0 AND alias1 > sub1 RETURN pname, alias1;"
 
 def test_simple_missing_error():
     query = " "
