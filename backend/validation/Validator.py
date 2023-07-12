@@ -19,22 +19,20 @@ class Validator:
         f = open(backend.DATA_DIR)
         self.functions = json.load(f)['functions']
 
-    def recursiveTree(self, tokenT):
+    def recursive_validation(self, token):
         global pos
-        if type(tokenT) != sqlparse.sql.Token:
-            for t in tokenT:
+        if type(token) != sqlparse.sql.Token:
+            for t in token:
                 if type(t) != sqlparse.sql.Token:
-
                     if type(t) == sqlparse.sql.Function:
                         if not self.is_insert_statement:
                             self.function_check(t)
 
-                    self.recursiveTree(t)
+                    self.recursive_validation(t)
                 else:
                     pos += len(str(t))
-                    pass
         else:
-            pos += len(str(tokenT))
+            pos += len(str(token))
             return
 
     def query_syntax_validation(self, query):
@@ -51,7 +49,7 @@ class Validator:
 
         return_pos = self.check_keyword_usage(parsed.tokens)
 
-        self.recursiveTree(parsed.tokens)
+        self.recursive_validation(parsed.tokens)
 
         print("--------------------------------")
         valid, error_message = self.check_flags()
