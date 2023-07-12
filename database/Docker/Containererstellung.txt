@@ -1,0 +1,23 @@
+--- Erstellung eines Containers mit Neo4j-Datenbank (Auf Deutsch)
+
+Folgende Befehle sind zur Erstellung eines Neo4j-Containers mit einem Teil der Northwind-Daten.
+
+--- Container erstellen:
+
+docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\##INSERT_MOUNT_PATH##:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
+
+##INSERT_MOUNT_PATH## ist ein Platzhalter für einen Dateipfad auf der eigenen Festplatte, der gemountet werden soll, wo dann die CSV-Dateien reinkopiert werden können.
+Diese Dateien sind dann innerhalb des Containers im Verzeichnispfad "/var/lib/neo4j/import" vorhanden.
+
+--- Datenbank füllen:
+
+Nachdem der Docker-Container gestartet und zum Ordner „/import“ navigiert wurde, sollten dort alle CSV-Dateien vorhanden sein.
+Anschließend können einfach alle Befehle aus der Datei „populate_cypher_commands.txt“ ausgeführt werden, um die Knoten und Beziehungen zu erstellen.
+Danach sollte die Datenbank einsatzbereit sein.
+
+--- Datenbank-Konsole starten:
+
+cypher-shell -u neo4j -p password
+
+Bei erstmaligem Starten muss nach dem Eingeben von cypher-shell das Passwort und der Username gesetzt werden.
+Standardmäßig ist beides bei erstmaligem Starten "neo4j".

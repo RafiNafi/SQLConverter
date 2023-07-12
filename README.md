@@ -48,3 +48,9 @@ With PyCharm (IDE):
 7. Run the command: "flask --app main/BackendFlask run" (should start the development flask server)
 
 To close the application just press "CONTROL + C" or close the console.
+
+
+Other important things to consider before using the conversion:
+- need to use aliases as prefix for column names (alias.column)
+- relationship arrow names from JOINS are placeholders
+

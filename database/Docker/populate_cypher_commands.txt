@@ -1,16 +1,4 @@
-Befehle um die Neo4j-Datenbank mit den CSV-Daten zu befüllen:
 
-###INSERT_MOUNT_PATH### ist ein Platzhalter für einen Dteipfad, der gemountet werden soll, wo dann die CSV-Dateien reinkopiert weden können.
-
-Container erstellen:
-docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\###INSERT_MOUNT_PATH###:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
-
-Datenbank-Konsole starten:
-cypher-shell -u neo4j -p password
-
-
-
-Befehle zur Befüllung der Datenbank:
 
 NODES
 
