@@ -207,6 +207,27 @@ def test_outer_join():
                                             "WHERE e.EmployeeID = 100 " \
                                             "RETURN e.EmployeeID, count(*) AS Count;"
 
+def test_right_outer_join():
+    query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "RIGHT OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id;"
+
+    assert validator.Validator().query_syntax_validation(query)[0]
+
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees) " \
+                                               "OPTIONAL MATCH (manager:employees)<-[:relationship]-(e:employees) " \
+                                               "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
+
+def test_right_outer_double_join():
+    query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "RIGHT OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id " \
+            "RIGHT OUTER JOIN products AS p ON (e.ProductID = p.ProductID);"
+
+    assert validator.Validator().query_syntax_validation(query)[0]
+
+    assert convert_type("Cypher", query, 0) == "MATCH (manager:employees) " \
+                                               "OPTIONAL MATCH (manager:employees)<-[:relationship]-(e:employees)<-[:relationship]-(p:products) " \
+                                               "RETURN e.first_name AS Employee, manager.first_name AS Manager;"
+
 def test_outer_join_and_is_null():
 
     query = "SELECT c.company_name, o.order_id FROM customers AS c FULL OUTER JOIN orders AS o ON (c.customer_id = o.customer_id) WHERE o.order_id IS NULL ORDER BY c.company_name;"

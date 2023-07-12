@@ -168,6 +168,7 @@ class CypherQuery:
         return statement.text
 
     def get_node_from_match(self, match_query, text):
+
         node = match_query.get_node_by_name(text)
 
         if node is None:
@@ -185,7 +186,7 @@ class CypherQuery:
                 statement_r.text += " AS sub" + str(counter)
 
                 global previous_name_having
-                print(previous_name_having)
+                # print(previous_name_having)
                 if depth in previous_name_having:
                     previous_name_having[depth].append("sub" + str(counter))
                 else:
@@ -302,7 +303,7 @@ class CypherQuery:
     def update_having_clause(self):
         global previous_name_having
         statement = self.get_query_part_by_name("HAVING")
-        print(previous_name_having)
+        #print(previous_name_having)
         if statement is not None:
             if statement.text[-1] == " " and len(previous_name_having) > 0:
                 for array in previous_name_having.keys():
@@ -456,7 +457,6 @@ class CypherQuery:
         values = comp.split("=")
 
         # checks for name first then label
-
         node1 = self.get_node_from_match(match_query, values[0].split(".")[0])
         node2 = self.get_node_from_match(match_query, values[len(values) - 1].split(".")[0])
 
@@ -473,12 +473,27 @@ class CypherQuery:
                 node2 = self.get_node_from_match(query_other_match,
                                                  values[len(values) - 1].split(".")[0])
 
-        # direction is relevant for outer joins
+        # optional match
+        for query in self.queryParts:
+            if node1 is not None and node2 is not None:
+                break
+            if type(query) == OptionalMatchPart:
+                if node1 is None:
+                    node1 = self.get_node_from_match(query, values[0].split(".")[0])
+                if node2 is None:
+                    node2 = self.get_node_from_match(query, values[len(values) - 1].split(".")[0])
 
+        # direction is relevant for outer joins and node that have relationships in both directions
         directions = self.caluclate_directions(joined_node, node1, node2, join_type)
 
         dir1 = directions["dir1"]
         dir2 = directions["dir2"]
+
+        # add nodes
+        if node1 is not joined_node:
+            match_query.add_node(node1)
+        else:
+            match_query.add_node(node2)
 
         rel = Relationship("relationship", "", node2, node1, dir1, dir2)
         # add relationship to match query part
@@ -492,20 +507,34 @@ class CypherQuery:
         dir2 = "-"
 
         if join_type == "LEFT OUTER JOIN" or join_type == "LEFT JOIN" or \
-                join_type == "FULL JOIN" or join_type == "FULL OUTER JOIN":
+                join_type == "RIGHT OUTER JOIN" or join_type == "RIGHT JOIN":
             if joined_node == node1:
                 dir1 = "-"
                 dir2 = "->"  # ->
             elif joined_node == node2:
                 dir1 = "<-"  # <-
                 dir2 = "-"
-        elif join_type == "RIGHT OUTER JOIN" or join_type == "RIGHT JOIN":
+
+            if join_type == "RIGHT OUTER JOIN" or join_type == "RIGHT JOIN":
+                select_statement = self.get_match_part(MatchPart)
+
+                # remove actual node and add joined node
+                for i in select_statement.nodes:
+                    if i == node1 or i == node2:
+                        select_statement.nodes.remove(i)
+                        select_statement.add_node(Node(joined_node.name, joined_node.label))
+                        break
+
+        elif join_type == "FULL JOIN" or join_type == "FULL OUTER JOIN":
+
             if joined_node == node1:
-                dir1 = "<-"
-                dir2 = "-"  # ->
+                dir1 = "-"
+                dir2 = "->"  # ->
             elif joined_node == node2:
-                dir1 = "-"  # <-
-                dir2 = "->"
+                dir1 = "<-"  # <-
+                dir2 = "-"
+
+
 
         return {"dir1": dir1, "dir2": dir2}
 
