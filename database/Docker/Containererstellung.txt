@@ -2,6 +2,8 @@
 
 Folgende Befehle sind zur Erstellung eines Neo4j-Containers mit einem Teil der Northwind-Daten.
 
+Primär muss Docker installiert sein und das Neo4j-Image, mit dem Befehl „docker pull neo4j“ oder „docker pull neo4j:4.4.5“ (falls die neuere Version nicht passen sollte), in einer Konsole heruntergeladen werden.
+
 --- Container erstellen:
 
 docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\##INSERT_MOUNT_PATH##:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest

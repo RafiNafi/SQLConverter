@@ -3,6 +3,8 @@
 
 The following commands are for creating a Neo4j container with a part of the northwind database data.
 
+First you need docker installed and the neo4j image, that you can get with using the command "docker pull neo4j" or "docker pull neo4j:4.4.5" (if newest not working) in a console.
+
 ### Create container:
 
 <span style="color:grey">docker run --name northwindneo4j -p7474:7474 -p7687:7687 -d -v C:\##INSERT_MOUNT_PATH##:/var/lib/neo4j/import --env NEO4J_AUTH=neo4j/password neo4j:latest
