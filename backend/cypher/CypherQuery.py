@@ -75,6 +75,23 @@ def convert_query(query_parts, is_subquery, is_exists_subquery):
 
             queries_list.append(string_query)
 
+    # only for FULL OUTER JOIN => RIGHT JOIN UNION LEFT JOIN
+    for idx, token in enumerate(parsed.tokens):
+        if str(token).upper() == "FULL OUTER JOIN" or str(token).upper() == "FULL JOIN":
+            queries_list.clear()
+            join_type = ""
+            combined_result = ""
+            for single in parsed.tokens:
+                if str(single).upper() == "FULL OUTER JOIN" or str(single).upper() == "FULL JOIN":
+                    combined_result += str(single).upper()
+                    join_type = str(single).upper()
+                else:
+                    combined_result += str(single)
+
+            queries_list.append(combined_result.replace(join_type, "LEFT OUTER JOIN"))
+            queries_list.append("UNION ")
+            queries_list.append(combined_result.replace(join_type, "RIGHT OUTER JOIN"))
+
     print("QUERIES LIST: " + str(queries_list))
 
     print("--------------------------------")
@@ -533,8 +550,6 @@ class CypherQuery:
             elif joined_node == node2:
                 dir1 = "<-"  # <-
                 dir2 = "-"
-
-
 
         return {"dir1": dir1, "dir2": dir2}
 

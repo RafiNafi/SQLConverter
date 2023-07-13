@@ -238,6 +238,12 @@ def test_outer_join_and_is_null():
                                                "OPTIONAL MATCH (o:orders)<-[:relationship]-(c:customers) " \
                                                "WHERE o.order_id IS NULL " \
                                                "RETURN c.company_name, o.order_id " \
+                                               "ORDER BY c.company_name " \
+                                               "UNION " \
+                                               "MATCH (o:orders) " \
+                                               "OPTIONAL MATCH (o:orders)<-[:relationship]-(c:customers) " \
+                                               "WHERE o.order_id IS NULL " \
+                                               "RETURN c.company_name, o.order_id " \
                                                "ORDER BY c.company_name;"
 
 def test_mixed_multiple_joins():

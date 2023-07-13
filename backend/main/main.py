@@ -144,8 +144,13 @@ if __name__ == '__main__':
             "HAVING COUNT(p.unit_price) > 3) HAVING COUNT(p.unit_price) > " \
             "(SELECT p.product_name AS pname,COUNT(p.unit_price) FROM products AS p GROUP BY pname HAVING COUNT(p.unit_price) > 2) ;"
 
+    queryDoubleRightJoin = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
+            "RIGHT OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id " \
+            "RIGHT OUTER JOIN products AS p ON (e.ProductID = p.ProductID);"
+
+
     query = "SELECT e.first_name AS Employee, manager.first_name AS Manager FROM employees AS e " \
-            "LEFT OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id;"
+            "FULL OUTER JOIN employees AS manager ON e.reports_to = manager.employee_id;"
 
     print("--------------------------------")
 
